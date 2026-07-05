@@ -1,0 +1,542 @@
+@if (loading()) {
+  <div class="spinner"></div>
+} @else if (char(); as c) {
+  <div class="page sheet">
+
+    <!-- Barra superiore -->
+    <div class="flex-between mb-2">
+      <button type="button" class="btn btn-ghost" (click)="goHome()">← Torna alla Lista</button>
+      <button type="button" class="btn btn-primary btn-sm" (click)="classesModal.set(true)">⚔ Gestisci Classi & Multiclasse</button>
+    </div>
+
+    <!-- Intestazione -->
+    <header class="card card-ornate sheet-header">
+      <div class="header-name">
+        <label class="mini-label">Nome del Personaggio</label>
+        <input class="name-input" [ngModel]="c.name" (ngModelChange)="patchPath('name', $event)" />
+      </div>
+      <div class="header-grid">
+        <div class="header-cell">
+          <label class="mini-label">Classe & Livello</label>
+          <span class="header-value">{{ rules.classLabel(c) }}</span>
+        </div>
+        <div class="header-cell">
+          <label class="mini-label">Background</label>
+          <span class="header-value">{{ backgroundName() }}</span>
+        </div>
+        <div class="header-cell">
+          <label class="mini-label">Razza</label>
+          <span class="header-value">{{ raceName() }}</span>
+        </div>
+        <div class="header-cell">
+          <label class="mini-label">Allineamento</label>
+          <input [ngModel]="c.alignment" (ngModelChange)="patchPath('alignment', $event)" />
+        </div>
+        <div class="header-cell">
+          <label class="mini-label">Punti Esperienza</label>
+          <input type="number" [ngModel]="c.experiencePoints" (ngModelChange)="patchNum('experiencePoints', $event)" />
+        </div>
+      </div>
+    </header>
+
+    <div class="sheet-grid">
+      <!-- Colonna sinistra: caratteristiche + competenze -->
+      <div class="col-left">
+        <section class="ability-column">
+          @for (key of keys; track key) {
+            <div class="ability-box card">
+              <span class="ability-name">{{ labels[key] }}</span>
+              <input class="ability-score" type="number"
+                     [ngModel]="c.stats[key]" (ngModelChange)="setBaseScore(key, $event)" />
+              @if (c.applyRacialBonuses && finalScore(key) !== c.stats[key]) {
+                <span class="racial-note">{{ c.stats[key] }} + razza = {{ finalScore(key) }}</span>
+              }
+              <span class="ability-mod">{{ modOf(key) }}</span>
+            </div>
+          }
+        </section>
+
+        <section class="card mini-stats">
+          <label class="flex small">
+            <input type="checkbox" [checked]="c.combat.inspiration"
+                   (change)="togglePath('combat.inspiration')" />
+            Ispirazione
+          </label>
+          <div class="flex-between small"><span>Bonus Competenza</span><strong class="gold">+{{ rules.proficiencyBonus(c) }}</strong></div>
+          <div class="flex-between small"><span>Percezione Passiva</span><strong class="gold">{{ rules.passivePerception(c) }}</strong></div>
+          @if (hasHalfProf()) {
+            <p class="tiny-note">✦ Factotum attivo: +{{ halfProfBonus() }} alle abilità senza competenza</p>
+          }
+        </section>
+
+        <section class="card">
+          <h4 class="box-title">Tiri Salvezza</h4>
+          @for (key of keys; track key) {
+            <label class="prof-row">
+              <input type="checkbox" [checked]="hasSaveProf(key)" (change)="toggleSaveProf(key)" />
+              <span class="prof-value">{{ saveBonus(key) }}</span>
+              <span>{{ labels[key] }}</span>
+            </label>
+          }
+        </section>
+
+        <section class="card">
+          <h4 class="box-title">Abilità</h4>
+          @for (skill of content.skills; track skill.id) {
+            <label class="prof-row">
+              <input type="checkbox" [checked]="isProficient(skill.id)" (change)="toggleSkill(skill.id)" />
+              <span class="prof-value">{{ skillBonus(skill.id) }}</span>
+              <span>{{ skill.name }} <em class="tiny">({{ short[skill.ability] }})</em></span>
+              @if (isExpertiseSkill(skill.id)) { <span class="badge" title="Maestria: doppio bonus competenza">×2</span> }
+            </label>
+          }
+        </section>
+      </div>
+
+      <!-- Colonna centrale: combattimento -->
+      <div class="col-mid">
+        <section class="combat-row">
+          <div class="card combat-box">
+            <span class="combat-value-wrap"><input type="number" [ngModel]="c.combat.armorClass" (ngModelChange)="patchNum('combat.armorClass', $event)" /></span>
+            <span class="combat-label">Classe Armatura</span>
+          </div>
+          <div class="card combat-box">
+            <span class="combat-value-wrap"><input type="number" [ngModel]="c.combat.initiative" (ngModelChange)="patchNum('combat.initiative', $event)" /></span>
+            <span class="combat-label">Iniziativa</span>
+          </div>
+          <div class="card combat-box">
+            <span class="combat-value-wrap"><input type="number" [ngModel]="c.combat.speed" (ngModelChange)="patchNum('combat.speed', $event)" /></span>
+            <span class="combat-label">Velocità (m)</span>
+          </div>
+        </section>
+
+        <section class="card hp-box">
+          <div class="hp-row">
+            <div>
+              <label class="mini-label">PF Massimi</label>
+              <input type="number" [ngModel]="c.combat.maxHp" (ngModelChange)="patchNum('combat.maxHp', $event)" />
+            </div>
+            <div>
+              <label class="mini-label">PF Attuali</label>
+              <input type="number" class="current-hp" [ngModel]="c.combat.currentHp" (ngModelChange)="patchNum('combat.currentHp', $event)" />
+            </div>
+            <div>
+              <label class="mini-label">PF Temporanei</label>
+              <input type="number" [ngModel]="c.combat.tempHp" (ngModelChange)="patchNum('combat.tempHp', $event)" />
+            </div>
+          </div>
+          <div class="hp-row mt-1">
+            <div>
+              <label class="mini-label">Dadi Vita</label>
+              <input [ngModel]="c.combat.hitDice" (ngModelChange)="patchPath('combat.hitDice', $event)" placeholder="es. 5d10" />
+            </div>
+            <div class="death-saves">
+              <label class="mini-label">TS contro Morte</label>
+              <div class="flex small">
+                <span>✓</span>
+                @for (i of [1,2,3]; track i) {
+                  <input type="checkbox" [checked]="c.combat.deathSaveSuccesses >= i"
+                         (change)="setDeathSave('deathSaveSuccesses', i)" />
+                }
+              </div>
+              <div class="flex small">
+                <span>✗</span>
+                @for (i of [1,2,3]; track i) {
+                  <input type="checkbox" [checked]="c.combat.deathSaveFailures >= i"
+                         (change)="setDeathSave('deathSaveFailures', i)" />
+                }
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="card">
+          <div class="flex-between mb-1">
+            <h4 class="box-title">Attacchi</h4>
+            <button type="button" class="btn btn-ghost btn-sm" (click)="addAttack()">+ Aggiungi</button>
+          </div>
+          @if (c.attacks.length === 0) { <p class="small muted">Nessun attacco registrato.</p> }
+          @for (attack of c.attacks; track $index; let i = $index) {
+            <div class="attack-row">
+              <input placeholder="Nome" [ngModel]="attack.name" (ngModelChange)="patchAttack(i, 'name', $event)" />
+              <input placeholder="Bonus" [ngModel]="attack.bonus" (ngModelChange)="patchAttack(i, 'bonus', $event)" />
+              <input placeholder="Danni/Tipo" [ngModel]="attack.damage" (ngModelChange)="patchAttack(i, 'damage', $event)" />
+              <button type="button" class="btn btn-danger btn-sm" (click)="removeAttack(i)">✕</button>
+            </div>
+          }
+        </section>
+
+        <section class="card equipment-box">
+          <h4 class="box-title">Equipaggiamento</h4>
+          <textarea rows="6" [ngModel]="c.equipment" (ngModelChange)="patchPath('equipment', $event)"
+                    placeholder="Zaino, corda, torce, monete d'oro…"></textarea>
+        </section>
+
+        <!-- Incantesimi -->
+        @if (isCaster()) {
+          <section class="card card-ornate spell-section">
+            <div class="flex-between mb-1">
+              <h4 class="box-title">✨ Incantesimi</h4>
+              <button type="button" class="btn btn-primary btn-sm" (click)="spellsModal.set(true)">Gestisci Incantesimi</button>
+            </div>
+
+            @if (slots().length > 0) {
+              <div class="slot-row">
+                @for (slot of slots(); track slot.level) {
+                  <div class="slot-box">
+                    <span class="slot-level">Liv {{ slot.level }}</span>
+                    <div class="flex">
+                      <button type="button" class="slot-btn" (click)="adjustSlot(slot.level, 1, slot.total)">−</button>
+                      <span class="slot-count">{{ slot.total - slotsUsed(slot.level) }}/{{ slot.total }}</span>
+                      <button type="button" class="slot-btn" (click)="adjustSlot(slot.level, -1, slot.total)">+</button>
+                    </div>
+                  </div>
+                }
+              </div>
+            }
+            @if (pact(); as p) {
+              <p class="small muted">Magia del Patto: {{ p.count }} slot di livello {{ p.slotLevel }} (riposo breve)</p>
+            }
+
+            @if (knownSpells().length === 0) {
+              <p class="small muted mt-1">Nessun incantesimo conosciuto. Usa "Gestisci Incantesimi" per aggiungerne.</p>
+            } @else if (knownSpells().length <= 8) {
+              @if (cantrips().length > 0) {
+                <h5 class="spell-group-title">Trucchetti</h5>
+                <div class="stat-chips">
+                  @for (spell of cantrips(); track spell.id) {
+                    <button type="button" class="badge badge-arcane spell-chip" (click)="spellDetail.set(spell)">
+                      <span class="action-badge" [class]="'at-' + spellActionType(spell)">{{ actionIcons[spellActionType(spell)] }}</span>
+                      {{ spell.name }}
+                    </button>
+                  }
+                </div>
+              }
+              @if (leveledSpells().length > 0) {
+                <h5 class="spell-group-title">Incantesimi</h5>
+                <div class="stat-chips">
+                  @for (spell of leveledSpells(); track spell.id) {
+                    <button type="button" class="badge badge-arcane spell-chip" (click)="spellDetail.set(spell)">
+                      <span class="action-badge" [class]="'at-' + spellActionType(spell)">{{ actionIcons[spellActionType(spell)] }}</span>
+                      {{ spell.name }} ({{ spell.level }})
+                      @if (hasPreparedCasting() && isPrepared(spell.id)) { ✦ }
+                    </button>
+                  }
+                </div>
+              }
+            } @else {
+              <button type="button" class="btn btn-ghost compact-btn" (click)="spellsModal.set(true)">
+                ✨ Incantesimi — {{ knownSpells().length }} conosciuti (apri elenco)
+              </button>
+            }
+          </section>
+        }
+      </div>
+
+      <!-- Colonna destra: tratti + abilità -->
+      <div class="col-right">
+        <section class="card">
+          <h4 class="box-title">Tratti del Personaggio</h4>
+          <label class="mini-label">Tratti Caratteriali</label>
+          <textarea rows="2" [ngModel]="c.traits.personality" (ngModelChange)="patchPath('traits.personality', $event)"></textarea>
+          <label class="mini-label">Ideali</label>
+          <textarea rows="2" [ngModel]="c.traits.ideals" (ngModelChange)="patchPath('traits.ideals', $event)"></textarea>
+          <label class="mini-label">Legami</label>
+          <textarea rows="2" [ngModel]="c.traits.bonds" (ngModelChange)="patchPath('traits.bonds', $event)"></textarea>
+          <label class="mini-label">Difetti</label>
+          <textarea rows="2" [ngModel]="c.traits.flaws" (ngModelChange)="patchPath('traits.flaws', $event)"></textarea>
+        </section>
+
+        <!-- Abilità (compatta → modale) -->
+        <section class="card card-ornate">
+          <div class="flex-between mb-1">
+            <h4 class="box-title">Abilità & Privilegi</h4>
+            <span class="badge badge-lvl">{{ allFeatures().length }}</span>
+          </div>
+          @if (allFeatures().length <= 6) {
+            @for (fws of sortFav(allFeatures()); track fws.feature.id) {
+              <div class="feature-row-compact">
+                <button type="button" class="feature-title" (click)="featureDetail.set(fws)">
+                  <span class="action-badge" [class]="'at-' + actionTypeOf(fws)">{{ actionIcons[actionTypeOf(fws)] }}</span>
+                  {{ fws.feature.name }}
+                  <span class="tiny muted">{{ fws.source }}</span>
+                </button>
+                <button type="button" class="fav-star" [class.active]="isFavorite(fws)" (click)="toggleFavorite(fws, $event)">★</button>
+              </div>
+              @if (fws.feature.selection && selectedOptionNames(fws).length > 0) {
+                <ul class="suboption-list">
+                  @for (name of selectedOptionNames(fws); track name) { <li>{{ name }}</li> }
+                </ul>
+              }
+            }
+          } @else {
+            @for (fws of compactFeatures(); track fws.feature.id) {
+              <div class="feature-row-compact">
+                <button type="button" class="feature-title" (click)="featureDetail.set(fws)">
+                  <span class="action-badge" [class]="'at-' + actionTypeOf(fws)">{{ actionIcons[actionTypeOf(fws)] }}</span>
+                  {{ fws.feature.name }}
+                </button>
+                @if (isFavorite(fws)) { <span class="fav-star active">★</span> }
+              </div>
+            }
+            <button type="button" class="btn btn-ghost compact-btn mt-1" (click)="featuresModal.set(true)">
+              ⚜ Abilità — elenco completo ({{ allFeatures().length }})
+            </button>
+          }
+        </section>
+
+        <!-- Background -->
+        @if (background(); as bg) {
+          <section class="card">
+            <h4 class="box-title">{{ bg.icon }} {{ bg.name }}</h4>
+            <div class="trait-row">
+              <div class="trait-name">{{ bg.feature.name }}</div>
+              <div class="trait-desc small">{{ bg.feature.description }}</div>
+            </div>
+            <p class="small muted mt-1">Competenze: {{ bg.skillProficiencies.length ? bg.skillProficiencies.join(', ') : '—' }}</p>
+            @if (bg.toolProficiencies.length) { <p class="small muted">Strumenti: {{ bg.toolProficiencies.join(', ') }}</p> }
+            @if (bg.languages.length) { <p class="small muted">Lingue: {{ bg.languages.join(', ') }}</p> }
+          </section>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ MODALE: elenco completo abilità ============ -->
+  @if (featuresModal()) {
+    <app-modal title="Abilità del Personaggio" width="860px" (closed)="featuresModal.set(false)">
+      <div class="action-filter-bar">
+        <button type="button" class="tab" [class.active]="actionFilter() === null" (click)="actionFilter.set(null)">Tutte</button>
+        @for (type of actionFilters; track type) {
+          <button type="button" class="tab" [class.active]="actionFilter() === type" (click)="actionFilter.set(type)">
+            {{ actionIcons[type] }} {{ actionLabels[type] }}
+          </button>
+        }
+      </div>
+
+      @if (raceFeatures().length > 0) {
+        <h4 class="modal-group-title">🧬 Abilità di Razza</h4>
+        @for (fws of sortFav(raceFeatures()); track fws.feature.id) {
+          @if (passesFilter(fws)) { <ng-container *ngTemplateOutlet="featureRow; context: { fws }" /> }
+        }
+      }
+      @if (backgroundFeatures().length > 0) {
+        <h4 class="modal-group-title">📜 Background</h4>
+        @for (fws of sortFav(backgroundFeatures()); track fws.feature.id) {
+          @if (passesFilter(fws)) { <ng-container *ngTemplateOutlet="featureRow; context: { fws }" /> }
+        }
+      }
+      @for (group of classGroups(); track group.entry.classId) {
+        @if (group.features.length > 0) {
+          <h4 class="modal-group-title">⚔ Abilità di Classe — {{ group.className }}</h4>
+          @for (fws of sortFav(group.features); track fws.feature.id) {
+            @if (passesFilter(fws)) { <ng-container *ngTemplateOutlet="featureRow; context: { fws }" /> }
+          }
+        }
+      }
+    </app-modal>
+  }
+
+  <ng-template #featureRow let-fws="fws">
+    <div class="accordion-item">
+      <div class="accordion-header-row">
+        <button type="button" class="accordion-header" [class.open]="expandedFeature() === fws.feature.id"
+                (click)="expandedFeature.set(expandedFeature() === fws.feature.id ? '' : fws.feature.id)">
+          <span class="flex">
+            <span class="action-badge" [class]="'at-' + actionTypeOf(fws)" [title]="actionLabels[actionTypeOf(fws)]">{{ actionIcons[actionTypeOf(fws)] }}</span>
+            {{ fws.feature.name }}
+            <span class="tiny muted">{{ fws.source }}</span>
+            @if (fws.feature.selection) { <span class="badge badge-arcane">{{ selectedOptions(fws).length }}/{{ selectionCap(fws) }} scelte</span> }
+          </span>
+          <span class="chev">❯</span>
+        </button>
+        <button type="button" class="fav-star" [class.active]="isFavorite(fws)" (click)="toggleFavorite(fws, $event)">★</button>
+      </div>
+      @if (expandedFeature() === fws.feature.id) {
+        <div class="accordion-body">
+          <p>{{ fws.feature.description }}</p>
+          @if (fws.feature.selection) {
+            <div class="pool-select mt-1">
+              @for (opt of poolOptions(fws); track opt.id) {
+                <label class="prof-row" [class.unavailable]="!optionAllowed(fws, opt.id)">
+                  <input type="checkbox"
+                         [checked]="selectedOptions(fws).includes(opt.id)"
+                         [disabled]="!selectedOptions(fws).includes(opt.id) && (!optionAllowed(fws, opt.id) || selectedOptions(fws).length >= selectionCap(fws))"
+                         (change)="toggleOption(fws, opt.id)" />
+                  <span>
+                    <strong>{{ opt.name }}</strong>
+                    @if (opt.prerequisite?.minLevel) { <span class="badge badge-lvl">Liv. {{ opt.prerequisite?.minLevel }}+</span> }
+                    <br /><span class="tiny muted">{{ opt.description }}</span>
+                  </span>
+                </label>
+              }
+            </div>
+          }
+          @if (fws.feature.effect?.type === 'expertise') {
+            <div class="pool-select mt-1">
+              <p class="small gold">Maestria: {{ expertiseChosen(fws).length }}/{{ expertiseCap(fws) }} abilità scelte</p>
+              @for (skillId of eligibleExpertiseSkills(fws); track skillId) {
+                <label class="prof-row">
+                  <input type="checkbox"
+                         [checked]="expertiseChosen(fws).includes(skillId)"
+                         [disabled]="!expertiseChosen(fws).includes(skillId) && expertiseChosen(fws).length >= expertiseCap(fws)"
+                         (change)="toggleExpertise(fws, skillId)" />
+                  <span>{{ skillName(skillId) }}</span>
+                </label>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+  </ng-template>
+
+  <!-- ============ MODALE: dettaglio singola abilità ============ -->
+  @if (featureDetail(); as fws) {
+    <app-modal [title]="fws.feature.name" width="600px" (closed)="featureDetail.set(null)">
+      <div class="flex-between mb-1">
+        <span class="badge action-badge" [class]="'at-' + actionTypeOf(fws)">{{ actionIcons[actionTypeOf(fws)] }} {{ actionLabels[actionTypeOf(fws)] }}</span>
+        <button type="button" class="fav-star" [class.active]="isFavorite(fws)" (click)="toggleFavorite(fws)">★ {{ isFavorite(fws) ? 'Preferita' : 'Aggiungi ai preferiti' }}</button>
+      </div>
+      <p class="small muted mb-1">{{ fws.source }}@if (fws.feature.level > 0) { — sbloccata al livello {{ fws.feature.level }}}</p>
+      <p>{{ fws.feature.description }}</p>
+      @if (fws.feature.selection) {
+        <h4 class="mt-2 mb-1 gold">Selezioni ({{ selectedOptions(fws).length }}/{{ selectionCap(fws) }})</h4>
+        <div class="pool-select">
+          @for (opt of poolOptions(fws); track opt.id) {
+            <label class="prof-row" [class.unavailable]="!optionAllowed(fws, opt.id)">
+              <input type="checkbox"
+                     [checked]="selectedOptions(fws).includes(opt.id)"
+                     [disabled]="!selectedOptions(fws).includes(opt.id) && (!optionAllowed(fws, opt.id) || selectedOptions(fws).length >= selectionCap(fws))"
+                     (change)="toggleOption(fws, opt.id)" />
+              <span>
+                <strong>{{ opt.name }}</strong>
+                @if (opt.prerequisite?.minLevel) { <span class="badge badge-lvl">Liv. {{ opt.prerequisite?.minLevel }}+</span> }
+                <br /><span class="tiny muted">{{ opt.description }}</span>
+              </span>
+            </label>
+          }
+        </div>
+      }
+    </app-modal>
+  }
+
+  <!-- ============ MODALE: dettaglio incantesimo ============ -->
+  @if (spellDetail(); as spell) {
+    <app-modal [title]="spell.name" width="600px" (closed)="spellDetail.set(null)">
+      <div class="stat-chips">
+        <span class="badge badge-lvl">{{ spell.level === 0 ? 'Trucchetto' : 'Livello ' + spell.level }}</span>
+        <span class="badge badge-arcane">{{ spell.school }}</span>
+        <span class="badge action-badge" [class]="'at-' + spellActionType(spell)">{{ actionIcons[spellActionType(spell)] }} {{ actionLabels[spellActionType(spell)] }}</span>
+        @if (spell.concentration) { <span class="badge">Concentrazione</span> }
+        @if (spell.ritual) { <span class="badge">Rituale</span> }
+      </div>
+      <table class="dnd-table mb-1">
+        <tbody>
+          <tr><td>Tempo di lancio</td><td>{{ spell.castingTime }}</td></tr>
+          <tr><td>Gittata</td><td>{{ spell.range }}</td></tr>
+          <tr><td>Componenti</td><td>{{ spell.components }}</td></tr>
+          <tr><td>Durata</td><td>{{ spell.duration }}</td></tr>
+        </tbody>
+      </table>
+      <p>{{ spell.description }}</p>
+      @if (spell.notes) { <p class="small muted mt-1">Note: {{ spell.notes }}</p> }
+    </app-modal>
+  }
+
+  <!-- ============ MODALE: gestione incantesimi ============ -->
+  @if (spellsModal()) {
+    <app-modal title="Gestione Incantesimi" width="900px" (closed)="spellsModal.set(false)">
+      <div class="spell-filters">
+        <select [(ngModel)]="spellClassFilter">
+          <option value="">Tutte le classi</option>
+          @for (entry of c.classes; track entry.classId) {
+            <option [value]="entry.classId">{{ className(entry.classId) }}</option>
+          }
+        </select>
+        <select [(ngModel)]="spellLevelFilter">
+          <option [ngValue]="null">Tutti i livelli</option>
+          <option [ngValue]="0">Trucchetti</option>
+          @for (lvl of [1,2,3,4,5,6,7,8,9]; track lvl) { <option [ngValue]="lvl">Livello {{ lvl }}</option> }
+        </select>
+        <select [(ngModel)]="spellSchoolFilter">
+          <option value="">Tutte le scuole</option>
+          @for (school of schools; track school) { <option [value]="school">{{ school }}</option> }
+        </select>
+        <input type="text" [(ngModel)]="spellSearch" placeholder="Cerca…" />
+      </div>
+      <p class="small muted mb-1">
+        Conosciuti: <strong class="gold">{{ c.knownSpellIds.length }}</strong>
+        @if (hasPreparedCasting()) { · Preparati: <strong class="gold">{{ c.preparedSpellIds.length }}</strong> }
+      </p>
+      @for (spell of filteredAvailableSpells(); track spell.id) {
+        <div class="spell-manage-row" [class.known-row]="isKnownSpell(spell.id)">
+          <label class="flex">
+            <input type="checkbox" [checked]="isKnownSpell(spell.id)" (change)="toggleKnownSpell(spell.id)" />
+            <span class="spell-name-mini">{{ spell.name }}</span>
+            <span class="badge badge-lvl">{{ spell.level === 0 ? 'Truc.' : 'Liv. ' + spell.level }}</span>
+            <span class="badge badge-arcane">{{ spell.school }}</span>
+            <span class="action-badge" [class]="'at-' + spellActionType(spell)" [title]="actionLabels[spellActionType(spell)]">{{ actionIcons[spellActionType(spell)] }}</span>
+          </label>
+          <span class="flex">
+            @if (hasPreparedCasting() && isKnownSpell(spell.id) && spell.level > 0) {
+              <label class="small flex prepared-toggle">
+                <input type="checkbox" [checked]="isPrepared(spell.id)" (change)="togglePrepared(spell.id)" />
+                Preparato
+              </label>
+            }
+            <button type="button" class="btn btn-ghost btn-sm" (click)="spellDetail.set(spell)">?</button>
+          </span>
+        </div>
+      }
+      @if (filteredAvailableSpells().length === 0) {
+        <div class="empty-state"><span class="rune">✨</span>Nessun incantesimo disponibile per queste classi o filtri.</div>
+      }
+    </app-modal>
+  }
+
+  <!-- ============ MODALE: gestione classi / multiclasse ============ -->
+  @if (classesModal()) {
+    <app-modal title="Classi & Multiclasse" width="760px" (closed)="classesModal.set(false)">
+      <p class="small muted mb-2">Gestisci le classi del personaggio: livelli, sottoclassi e classi secondarie.</p>
+      @for (entry of c.classes; track $index; let i = $index) {
+        <div class="class-entry-row">
+          <div class="form-field">
+            <label>{{ i === 0 ? 'Classe primaria' : 'Classe secondaria' }}</label>
+            <select [ngModel]="entry.classId" (ngModelChange)="setEntryClass(i, $event)">
+              @for (cls of content.classes(); track cls.id) {
+                <option [value]="cls.id" [disabled]="isClassUsed(cls.id, i)">{{ cls.icon }} {{ cls.name }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-field">
+            <label>Livello</label>
+            <input type="number" min="1" max="20" [ngModel]="entry.level" (ngModelChange)="setEntryLevel(i, $event)" />
+          </div>
+          <div class="form-field">
+            <label>Sottoclasse</label>
+            <select [ngModel]="entry.subclassId" (ngModelChange)="setEntrySubclass(i, $event)" [disabled]="!canPickSubclass(entry)">
+              <option [ngValue]="null">— Nessuna —</option>
+              @for (sub of subclassesFor(entry.classId); track sub.id) {
+                <option [ngValue]="sub.id">{{ sub.name }}</option>
+              }
+            </select>
+            @if (!canPickSubclass(entry) && subclassesFor(entry.classId).length > 0) {
+              <span class="hint lock-hint">🔒 Si sblocca al livello {{ subclassLevelOf(entry.classId) }}
+                @if (grantsSpellsOnlyViaSubclass(entry.classId)) { — anche gli eventuali incantesimi arrivano da lì }
+              </span>
+            }
+          </div>
+          @if (i > 0) {
+            <button type="button" class="btn btn-danger btn-sm remove-class-btn" (click)="removeClassEntry(i)">✕</button>
+          }
+        </div>
+      }
+      @if (c.classes.length === 0) {
+        <p class="muted">Nessuna classe assegnata.</p>
+      }
+      <button type="button" class="btn btn-primary btn-sm mt-1" (click)="addClassEntry()">+ Aggiungi Classe</button>
+      <p class="small muted mt-2">Livello totale: <strong class="gold">{{ rules.totalLevel(c) }}</strong> · Bonus competenza: <strong class="gold">+{{ rules.proficiencyBonus(c) }}</strong></p>
+    </app-modal>
+  }
+}
