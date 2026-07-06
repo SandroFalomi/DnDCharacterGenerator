@@ -11,41 +11,107 @@ export const RACES: Race[] = [
     size: 'Media', speed: 9, languages: ['Comune', 'Una lingua a scelta']
   },
   {
-    id: 'elfo-alto', name: 'Elfo Alto', icon: '🧝',
-    description: 'Creature magiche di grazia ultraterrena, gli elfi alti custodiscono i segreti dell\'arcano da millenni, in città nascoste tra boschi antichi.',
-    abilityBonuses: { DEX: 2, INT: 1 },
+    id: 'elfo', name: 'Elfo', icon: '🧝',
+    description: 'Creature magiche di grazia ultraterrena, gli elfi vivono in luoghi di bellezza eterea e custodiscono i segreti dell\'arcano da millenni.',
+    abilityBonuses: { DEX: 2 },
     traits: [
       { name: 'Scurovisione', description: 'Puoi vedere in condizioni di luce fioca entro 18 metri come se fosse luce intensa.' },
       { name: 'Sensi Acuti', description: 'Hai competenza nell\'abilità Percezione.' },
       { name: 'Retaggio Fatato', description: 'Hai vantaggio nei tiri salvezza contro l\'ammaliamento e non puoi essere addormentato con la magia.' },
-      { name: 'Trance', description: 'Non hai bisogno di dormire: mediti 4 ore al giorno in uno stato di semi-coscienza.' },
-      { name: 'Trucchetto', description: 'Conosci un trucchetto a scelta dalla lista del mago. Intelligenza è la caratteristica da incantatore.' }
+      { name: 'Trance', description: 'Non hai bisogno di dormire: mediti 4 ore al giorno in uno stato di semi-coscienza.' }
     ],
-    size: 'Media', speed: 9, languages: ['Comune', 'Elfico', 'Una lingua a scelta']
+    size: 'Media', speed: 9, languages: ['Comune', 'Elfico'],
+    subraces: [
+      {
+        id: 'elfo-alto', name: 'Elfo Alto',
+        description: 'Elfi dal sangue arcano, eruditi e vicini alla magia.',
+        abilityBonuses: { INT: 1 },
+        traits: [
+          { name: 'Trucchetto', description: 'Conosci un trucchetto a scelta dalla lista del mago. Intelligenza è la caratteristica da incantatore.' },
+          { name: 'Lingua Extra', description: 'Parli, leggi e scrivi una lingua a tua scelta.' }
+        ]
+      },
+      {
+        id: 'elfo-boschi', name: 'Elfo dei Boschi',
+        description: 'Elfi dai sensi affinati e dall\'istinto selvaggio, rapidi e furtivi tra gli alberi.',
+        abilityBonuses: { WIS: 1 },
+        speed: 10.5,
+        traits: [
+          { name: 'Piede Lesto', description: 'La tua velocità base sale a 10,5 metri.' },
+          { name: 'Maschera della Natura', description: 'Puoi tentare di nasconderti anche quando sei oscurato solo lievemente da fogliame, pioggia o neve.' }
+        ]
+      },
+      {
+        id: 'elfo-oscuro', name: 'Elfo Oscuro (Drow)',
+        description: 'Discendenti degli elfi esiliati nel Sottosuolo, segnati dall\'oscurità e da una magia innata.',
+        abilityBonuses: { CHA: 1 },
+        traits: [
+          { name: 'Scurovisione Superiore', description: 'La tua scurovisione arriva fino a 36 metri.' },
+          { name: 'Sensibilità alla Luce Solare', description: 'Svantaggio ai tiri d\'attacco e alle prove di Percezione visive alla luce diretta del sole.' },
+          { name: 'Magia Drow', description: 'Conosci Luci Danzanti; al 3° livello Luminescenza, al 5° Oscurità (una volta al giorno ciascuno).', actionType: 'action' },
+          { name: 'Addestramento Drow', description: 'Hai competenza con stocchi, spade corte e balestre a mano.' }
+        ]
+      }
+    ]
   },
   {
-    id: 'nano-colline', name: 'Nano delle Colline', icon: '⛏️',
-    description: 'Robusti e tenaci, i nani delle colline possiedono sensi acuti, profonda intuizione e una resistenza fuori dal comune.',
-    abilityBonuses: { CON: 2, WIS: 1 },
+    id: 'nano', name: 'Nano', icon: '⛏️',
+    description: 'Robusti e tenaci, i nani sono maestri della pietra e del metallo, fieri delle proprie sale scavate nella roccia e delle tradizioni dei clan.',
+    abilityBonuses: { CON: 2 },
     traits: [
       { name: 'Scurovisione', description: 'Puoi vedere in condizioni di luce fioca entro 18 metri come se fosse luce intensa.' },
       { name: 'Resilienza Nanica', description: 'Hai vantaggio nei tiri salvezza contro il veleno e resistenza ai danni da veleno.' },
       { name: 'Addestramento da Combattimento dei Nani', description: 'Hai competenza con asce da battaglia, asce, martelli leggeri e martelli da guerra.' },
-      { name: 'Tenacia Nanica', description: 'Il tuo massimo dei punti ferita aumenta di 1 per ogni tuo livello.' }
+      { name: 'Conoscenza della Pietra', description: 'Aggiungi il doppio del bonus competenza alle prove di Storia legate alla lavorazione della pietra.' }
     ],
-    size: 'Media', speed: 7.5, languages: ['Comune', 'Nanico']
+    size: 'Media', speed: 7.5, languages: ['Comune', 'Nanico'],
+    subraces: [
+      {
+        id: 'nano-colline', name: 'Nano delle Colline',
+        description: 'Nani dai sensi acuti, profonda intuizione e notevole resistenza.',
+        abilityBonuses: { WIS: 1 },
+        traits: [
+          { name: 'Tenacia Nanica', description: 'Il tuo massimo dei punti ferita aumenta di 1 per ogni tuo livello.' }
+        ]
+      },
+      {
+        id: 'nano-montagne', name: 'Nano delle Montagne',
+        description: 'Nani forti e temprati dalla vita in territori aspri, avvezzi alle armature.',
+        abilityBonuses: { STR: 2 },
+        traits: [
+          { name: 'Addestramento nelle Armature dei Nani', description: 'Hai competenza con le armature leggere e medie.' }
+        ]
+      }
+    ]
   },
   {
-    id: 'halfling-piedelesto', name: 'Halfling Piedelesto', icon: '🍀',
-    description: 'Piccoli, agili e incredibilmente fortunati, gli halfling piedelesto sanno passare inosservati e cavarsela nelle situazioni più disperate.',
-    abilityBonuses: { DEX: 2, CHA: 1 },
+    id: 'halfling', name: 'Halfling', icon: '🍀',
+    description: 'Piccoli, agili e incredibilmente fortunati, gli halfling amano le comodità di casa ma sanno cavarsela nelle situazioni più disperate.',
+    abilityBonuses: { DEX: 2 },
     traits: [
       { name: 'Fortunato', description: 'Quando ottieni 1 a un tiro d\'attacco, prova o tiro salvezza, puoi ritirare il dado e devi usare il nuovo risultato.' },
       { name: 'Coraggioso', description: 'Hai vantaggio nei tiri salvezza contro la condizione spaventato.' },
-      { name: 'Agilità Halfling', description: 'Puoi muoverti attraverso lo spazio di qualsiasi creatura di taglia superiore alla tua.' },
-      { name: 'Furtività Innata', description: 'Puoi tentare di nasconderti anche quando sei oscurato solo da una creatura più grande di te.' }
+      { name: 'Agilità Halfling', description: 'Puoi muoverti attraverso lo spazio di qualsiasi creatura di taglia superiore alla tua.' }
     ],
-    size: 'Piccola', speed: 7.5, languages: ['Comune', 'Halfling']
+    size: 'Piccola', speed: 7.5, languages: ['Comune', 'Halfling'],
+    subraces: [
+      {
+        id: 'piedelesto', name: 'Piedelesto',
+        description: 'Halfling abili a nascondersi, anche dietro creature più grandi.',
+        abilityBonuses: { CHA: 1 },
+        traits: [
+          { name: 'Furtività Innata', description: 'Puoi tentare di nasconderti anche quando sei oscurato solo da una creatura più grande di te.' }
+        ]
+      },
+      {
+        id: 'tozzo', name: 'Tozzo',
+        description: 'Halfling più robusti della media, con una resistenza che ricorda quella dei nani.',
+        abilityBonuses: { CON: 1 },
+        traits: [
+          { name: 'Resilienza dei Tozzi', description: 'Hai vantaggio nei tiri salvezza contro il veleno e resistenza ai danni da veleno.' }
+        ]
+      }
+    ]
   },
   {
     id: 'dragonide', name: 'Dragonide', icon: '🐉',
@@ -59,16 +125,34 @@ export const RACES: Race[] = [
     size: 'Media', speed: 9, languages: ['Comune', 'Draconico']
   },
   {
-    id: 'gnomo-rocce', name: 'Gnomo delle Rocce', icon: '⚙️',
-    description: 'Curiosi e geniali, gli gnomi delle rocce vivono di invenzioni, ingranaggi e scoperte, animati da un entusiasmo inesauribile.',
-    abilityBonuses: { INT: 2, CON: 1 },
+    id: 'gnomo', name: 'Gnomo', icon: '⚙️',
+    description: 'Curiosi e geniali, gli gnomi vivono di invenzioni, illusioni e scoperte, animati da un entusiasmo inesauribile.',
+    abilityBonuses: { INT: 2 },
     traits: [
       { name: 'Scurovisione', description: 'Puoi vedere in condizioni di luce fioca entro 18 metri come se fosse luce intensa.' },
-      { name: 'Astuzia Gnomesca', description: 'Hai vantaggio nei TS su Intelligenza, Saggezza e Carisma contro la magia.' },
-      { name: 'Conoscenza degli Artefici', description: 'Aggiungi il doppio del bonus competenza alle prove di Storia su oggetti magici e congegni.' },
-      { name: 'Inventore', description: 'Hai competenza con gli strumenti da inventore e puoi costruire piccoli congegni meccanici.' }
+      { name: 'Astuzia Gnomesca', description: 'Hai vantaggio nei TS su Intelligenza, Saggezza e Carisma contro la magia.' }
     ],
-    size: 'Piccola', speed: 7.5, languages: ['Comune', 'Gnomesco']
+    size: 'Piccola', speed: 7.5, languages: ['Comune', 'Gnomesco'],
+    subraces: [
+      {
+        id: 'gnomo-rocce', name: 'Gnomo delle Rocce',
+        description: 'Gnomi inventori e artigiani, maestri di congegni e meccanismi.',
+        abilityBonuses: { CON: 1 },
+        traits: [
+          { name: 'Conoscenza degli Artefici', description: 'Aggiungi il doppio del bonus competenza alle prove di Storia su oggetti magici e congegni.' },
+          { name: 'Inventore', description: 'Hai competenza con gli strumenti da inventore e puoi costruire piccoli congegni meccanici.' }
+        ]
+      },
+      {
+        id: 'gnomo-foreste', name: 'Gnomo delle Foreste',
+        description: 'Gnomi schivi e illusionisti nati, amici delle piccole creature del bosco.',
+        abilityBonuses: { DEX: 1 },
+        traits: [
+          { name: 'Illusionista Nato', description: 'Conosci il trucchetto Illusione Minore. Intelligenza è la caratteristica da incantatore.' },
+          { name: 'Parlare con le Piccole Bestie', description: 'Puoi comunicare idee semplici alle bestie Piccole o più minute tramite suoni e gesti.' }
+        ]
+      }
+    ]
   },
   {
     id: 'mezzelfo', name: 'Mezzelfo', icon: '🌗',

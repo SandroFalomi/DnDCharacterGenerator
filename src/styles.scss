@@ -375,3 +375,71 @@ table.dnd-table {
 }
 .cdk-drag-placeholder { opacity: 0.25; }
 .cdk-drag-animating { transition: transform 0.25s cubic-bezier(0, 0, 0.2, 1); }
+
+/* ============================================================
+   Stampa — versione pulita in bianco e nero della scheda
+   ============================================================ */
+@media print {
+  body {
+    background: #fff !important;
+    background-image: none !important;
+    color: #000 !important;
+    font-size: 11pt;
+  }
+
+  /* Nasconde interfaccia e controlli */
+  .app-header, .top-bar, .btn, .edit-pencil, .fav-star, .slot-btn,
+  .delete-feature, .modal-backdrop, .compact-btn, .wizard-nav, .tabs {
+    display: none !important;
+  }
+
+  .page { max-width: 100%; padding: 0; }
+
+  .card, .accordion-item {
+    background: #fff !important;
+    border: 1px solid #999 !important;
+    box-shadow: none !important;
+    color: #000 !important;
+    break-inside: avoid;
+  }
+  .card::before { display: none; }
+
+  h1, h2, h3, h4, h5, .box-title, .mini-label, label,
+  .trait-name, .spell-group-title, .header-value, .gold,
+  .ability-mod, .prof-value, .res-count, .slot-count {
+    color: #000 !important;
+    text-shadow: none !important;
+  }
+
+  .muted, .small, .tiny, .trait-desc, .slot-note, .sub { color: #333 !important; }
+
+  input, select, textarea {
+    background: #fff !important;
+    color: #000 !important;
+    border: none !important;
+    border-bottom: 1px solid #999 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+  }
+
+  .badge, .action-badge {
+    color: #000 !important;
+    border-color: #666 !important;
+    background: #fff !important;
+  }
+
+  .ability-box .ability-mod { border-color: #666 !important; background: #fff !important; }
+  .prof-row input[type="checkbox"] { border-color: #666; }
+  .prof-row input[type="checkbox"]:checked { background: #000; border-color: #000; }
+
+  .sheet-grid { gap: 10px; }
+
+  /* Mostra il blocco dei dettagli completi */
+  .print-only {
+    display: block !important;
+    margin-top: 16px;
+    color: #000;
+    h3 { border-bottom: 1px solid #999; padding-bottom: 3px; }
+    .print-item { break-inside: avoid; }
+  }
+}

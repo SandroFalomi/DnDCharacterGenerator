@@ -125,6 +125,26 @@
   em { color: var(--parchment); }
 }
 
+/* Riposo lungo / barra superiore */
+.rest-btn { border-color: rgba(109, 90, 158, 0.6); }
+
+/* Incantesimi per livello */
+.slot-note { font-size: 0.72rem; color: var(--parchment-dim); text-transform: none; letter-spacing: 0; }
+
+/* Talenti */
+.benefit-list {
+  margin: 4px 0 0 20px; color: var(--parchment-dim);
+  li { margin-bottom: 4px; }
+}
+
+/* Stampa: blocco dettagli visibile solo su carta */
+.print-only {
+  display: none;
+  h3 { margin: 18px 0 8px; }
+  h4 { margin: 12px 0 6px; }
+  .print-item { margin-bottom: 8px; p { margin: 2px 0; } ul { margin: 2px 0 2px 18px; } }
+}
+
 /* Abilità personalizzate */
 .custom-badge { border-color: rgba(232, 179, 74, 0.5); color: #e8cf9a; background: rgba(232, 179, 74, 0.08); }
 .delete-feature { &:hover { color: var(--blood-bright); } }

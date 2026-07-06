@@ -30,6 +30,11 @@ npx ng serve
 - **Risorse & Utilizzi**: tracciamento delle abilità a uso limitato (Ira, Ispirazione Bardica…) con usi massimi/spesi, recupero configurabile (Riposo breve / Riposo lungo / Al giorno / Manuale) e pulsanti di riposo che ripristinano usi e slot.
 - **Cambio razza e background** direttamente dalla scheda, con avviso delle conseguenze (bonus caratteristica ricalcolati, tratti e velocità, competenze e privilegio del background scambiati automaticamente).
 - **Abilità personalizzate**: aggiunta manuale di abilità da qualsiasi fonte (classe, razza, background, talento, homebrew) o create ad hoc, con precompilazione dal catalogo, tipo di azione, usi e recupero.
+- **Razze e sottorazze**: le razze base (Elfo, Nano, Halfling, Gnomo…) hanno sottorazze selezionabili nel wizard e nella scheda; bonus, tratti e velocità vengono combinati automaticamente. Editor dedicato in Gestione Contenuti.
+- **Talenti**: catalogo PHB con prerequisiti e bonus, assegnabili al personaggio dalla scheda e gestibili (CRUD + import JSON) in Gestione Contenuti.
+- **Incantesimi per livello**: la sezione incantesimi della scheda è divisa per livello con gli slot rimanenti accanto a ogni intestazione (es. "Incantesimi di 1° livello — 3/4 utilizzi").
+- **Riposo lungo (🌙) e riposo breve (⏳)** dalla barra della scheda: ripristinano PF, TS contro morte, slot incantesimo e risorse secondo il recupero configurato.
+- **Stampa (🖨)**: versione stampabile in bianco e nero senza controlli, con appendice che include descrizioni complete di abilità, talenti e incantesimi.
 - **Gestione Contenuti (Developer)**: CRUD completo di classi, sottoclassi, abilità (con livello di sblocco, effetti speciali e sotto-opzioni), pool di sotto-abilità, background e incantesimi (con classi/sottoclassi abilitate). Import di contenuti da **file JSON validato**.
 
 ## Architettura dei contenuti

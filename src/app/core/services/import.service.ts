@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import {
-  Background, DndClass, OptionPool, Spell, Subclass
+  Background, DndClass, Feat, OptionPool, Spell, Subclass
 } from '../models/content.model';
 import { ContentService } from './content.service';
 
@@ -10,6 +10,7 @@ export interface ImportPayload {
   backgrounds?: Background[];
   spells?: Spell[];
   optionPools?: OptionPool[];
+  feats?: Feat[];
 }
 
 export interface ImportResult {
@@ -41,7 +42,7 @@ export class ImportService {
     }
 
     const data = raw as Record<string, unknown>;
-    const known = ['classes', 'subclasses', 'backgrounds', 'spells', 'optionPools'];
+    const known = ['classes', 'subclasses', 'backgrounds', 'spells', 'optionPools', 'feats'];
     const present = known.filter(k => k in data);
     if (present.length === 0) {
       return { valid: false, errors: [`Nessuna sezione riconosciuta. Chiavi ammesse: ${known.join(', ')}.`], summary: [] };
@@ -59,7 +60,8 @@ export class ImportService {
       subclasses: (data['subclasses'] as Subclass[]) ?? [],
       backgrounds: (data['backgrounds'] as Background[]) ?? [],
       spells: (data['spells'] as Spell[]) ?? [],
-      optionPools: (data['optionPools'] as OptionPool[]) ?? []
+      optionPools: (data['optionPools'] as OptionPool[]) ?? [],
+      feats: (data['feats'] as Feat[]) ?? []
     };
 
     // Insiemi di id noti (esistenti + in importazione) per i controlli referenziali
@@ -117,19 +119,29 @@ export class ImportService {
       if (Array.isArray(s.subclassIds)) s.subclassIds.forEach(id => { if (!subclassIds.has(id)) errors.push(`${at}: sottoclasse sconosciuta "${id}" in subclassIds.`); });
     });
 
+    payload.feats!.forEach((f, i) => {
+      const at = `feats[${i}]`;
+      this.req(errors, at, f, ['id', 'name', 'description']);
+      if (f && f.benefits !== undefined && !Array.isArray(f.benefits)) {
+        errors.push(`${at}: "benefits" deve essere un array di stringhe.`);
+      }
+    });
+
     // Anti-doppioni: blocca elementi con lo stesso nome di un contenuto esistente ma id diverso
     this.checkNameCollisions(errors, 'classes', payload.classes!, this.content.classes());
     this.checkNameCollisions(errors, 'subclasses', payload.subclasses!, this.content.subclasses());
     this.checkNameCollisions(errors, 'backgrounds', payload.backgrounds!, this.content.backgrounds());
     this.checkNameCollisions(errors, 'spells', payload.spells!, this.content.spells());
     this.checkNameCollisions(errors, 'optionPools', payload.optionPools!, this.content.optionPools());
+    this.checkNameCollisions(errors, 'feats', payload.feats!, this.content.feats());
 
     const summary = [
       { kind: 'Classi', count: payload.classes!.length },
       { kind: 'Sottoclassi', count: payload.subclasses!.length },
       { kind: 'Background', count: payload.backgrounds!.length },
       { kind: 'Incantesimi', count: payload.spells!.length },
-      { kind: 'Pool di opzioni', count: payload.optionPools!.length }
+      { kind: 'Pool di opzioni', count: payload.optionPools!.length },
+      { kind: 'Talenti', count: payload.feats!.length }
     ].filter(s => s.count > 0);
 
     return { valid: errors.length === 0, errors, summary, payload };
@@ -176,7 +188,8 @@ export class ImportService {
         components: s.components ?? '—',
         duration: s.duration ?? 'Istantanea'
       })),
-      optionPools: payload.optionPools?.map(p => ({ ...p, options: p.options ?? [] }))
+      optionPools: payload.optionPools?.map(p => ({ ...p, options: p.options ?? [] })),
+      feats: payload.feats?.map(f => ({ ...f, benefits: f.benefits ?? [] }))
     };
   }
 

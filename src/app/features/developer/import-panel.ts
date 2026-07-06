@@ -169,7 +169,9 @@ export class ImportPanelComponent {
                "duration": "Istantanea", "concentration": false, "description": "...",
                "classIds": ["mago"], "subclassIds": [] }],
   "optionPools": [{ "id": "infusioni", "name": "Infusioni",
-                    "options": [{ "id": "...", "name": "...", "description": "..." }] }]
+                    "options": [{ "id": "...", "name": "...", "description": "..." }] }],
+  "feats": [{ "id": "...", "name": "...", "description": "...",
+              "prerequisite": "opzionale", "benefits": ["...", "..."] }]
 }`;
 
   onFile(event: Event): void {

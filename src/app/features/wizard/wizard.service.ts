@@ -13,6 +13,7 @@ export class WizardService {
 
   readonly name = signal('');
   readonly raceId = signal('');
+  readonly subraceId = signal<string | null>(null);
   readonly backgroundId = signal('');
   readonly classes = signal<CharacterClassEntry[]>([]);
   readonly alignment = signal('');
@@ -31,6 +32,7 @@ export class WizardService {
     const char = emptyCharacter();
     char.name = this.name();
     char.raceId = this.raceId();
+    char.subraceId = this.subraceId();
     char.backgroundId = this.backgroundId();
     char.classes = this.classes();
     char.alignment = this.alignment();
@@ -61,6 +63,7 @@ export class WizardService {
   reset(): void {
     this.name.set('');
     this.raceId.set('');
+    this.subraceId.set(null);
     this.backgroundId.set('');
     this.classes.set([]);
     this.alignment.set('');
@@ -102,8 +105,7 @@ export class WizardService {
     char.combat.hitDice = hitDice.join(' + ');
     char.combat.initiative = this.rules.abilityMod(scores.DEX);
     char.combat.armorClass = 10 + this.rules.abilityMod(scores.DEX);
-    const race = this.content.raceMap().get(char.raceId);
-    char.combat.speed = race?.speed ?? 9;
+    char.combat.speed = this.rules.effectiveRace(char.raceId, char.subraceId)?.speed ?? 9;
     const bg = this.content.backgroundMap().get(char.backgroundId);
     char.equipment = [...(primary?.equipment ?? []), ...(bg?.equipment ?? [])];
     return char;

@@ -1,9 +1,20 @@
 import { Injectable, inject } from '@angular/core';
 import { CUSTOM_SOURCE_LABELS, Character, CharacterClassEntry, CustomFeature } from '../models/character.model';
 import {
-  ActionType, AbilityKey, AbilityScores, ClassFeature, SelectionConfig, Spell, SpellcastingConfig
+  ActionType, AbilityKey, AbilityScores, ClassFeature, Race, SelectionConfig, Spell,
+  SpellcastingConfig, Subrace, Trait
 } from '../models/content.model';
 import { ContentService } from './content.service';
+
+/** Dati razziali "effettivi": razza base + eventuale sottorazza già combinate. */
+export interface EffectiveRace {
+  race: Race;
+  subrace?: Subrace;
+  name: string;
+  abilityBonuses: Partial<AbilityScores>;
+  traits: Trait[];
+  speed: number;
+}
 
 export interface FeatureWithSource {
   feature: ClassFeature;
@@ -57,14 +68,36 @@ export class RulesService {
     return value >= 0 ? `+${value}` : `${value}`;
   }
 
+  /** Combina razza base e sottorazza in un unico insieme di bonus, tratti e velocità. */
+  effectiveRace(raceId: string, subraceId?: string | null): EffectiveRace | undefined {
+    const race = this.content.raceMap().get(raceId);
+    if (!race) return undefined;
+    const subrace = race.subraces?.find(s => s.id === subraceId);
+    const bonuses: Partial<AbilityScores> = { ...race.abilityBonuses };
+    for (const key of Object.keys(subrace?.abilityBonuses ?? {}) as AbilityKey[]) {
+      bonuses[key] = (bonuses[key] ?? 0) + (subrace!.abilityBonuses[key] ?? 0);
+    }
+    return {
+      race, subrace,
+      name: subrace ? `${race.name} (${subrace.name})` : race.name,
+      abilityBonuses: bonuses,
+      traits: [...race.traits, ...(subrace?.traits ?? [])],
+      speed: subrace?.speed ?? race.speed
+    };
+  }
+
+  effectiveRaceName(char: Character): string {
+    return this.effectiveRace(char.raceId, char.subraceId)?.name ?? '—';
+  }
+
   /** Punteggi finali (base + bonus razziali, oppure bonus liberi +2/+1 se i bonus razziali sono disattivati). */
   finalScores(char: Character): AbilityScores {
     const scores = { ...char.stats };
     if (char.applyRacialBonuses) {
-      const race = this.content.raceMap().get(char.raceId);
-      if (race) {
-        for (const key of Object.keys(race.abilityBonuses) as AbilityKey[]) {
-          scores[key] += race.abilityBonuses[key] ?? 0;
+      const eff = this.effectiveRace(char.raceId, char.subraceId);
+      if (eff) {
+        for (const key of Object.keys(eff.abilityBonuses) as AbilityKey[]) {
+          scores[key] += eff.abilityBonuses[key] ?? 0;
         }
       }
     } else {
@@ -100,10 +133,11 @@ export class RulesService {
     const result: FeatureWithSource[] = [];
     const race = this.content.raceMap().get(char.raceId);
     if (race) {
-      for (const t of race.traits) {
+      const eff = this.effectiveRace(char.raceId, char.subraceId);
+      for (const t of eff?.traits ?? race.traits) {
         result.push({
           feature: { id: `race-${t.name}`, name: t.name, description: t.description, level: 0, actionType: t.actionType },
-          source: race.name, sourceType: 'race'
+          source: eff?.name ?? race.name, sourceType: 'race'
         });
       }
     }

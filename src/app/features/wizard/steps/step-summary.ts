@@ -100,7 +100,7 @@ export class StepSummaryComponent {
     return Object.keys(this.wizard.customAbilityBonuses()).length > 0 ? '(con bonus liberi)' : '';
   }
 
-  raceName(): string { return this.content.raceMap().get(this.wizard.raceId())?.name ?? '—'; }
+  raceName(): string { return this.rules.effectiveRace(this.wizard.raceId(), this.wizard.subraceId())?.name ?? '—'; }
   backgroundName(): string { return this.content.backgroundMap().get(this.wizard.backgroundId())?.name ?? '—'; }
   className(id: string): string { return this.content.classMap().get(id)?.name ?? id; }
   subclassName(id: string): string { return this.content.subclassMap().get(id)?.name ?? id; }

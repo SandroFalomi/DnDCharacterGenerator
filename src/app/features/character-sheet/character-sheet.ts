@@ -8,7 +8,7 @@ import {
 } from '../../core/models/character.model';
 import {
   ABILITY_KEYS, ABILITY_LABELS, ABILITY_SHORT, ACTION_TYPE_ICONS, ACTION_TYPE_SHORT, ActionType, AbilityKey,
-  SPELL_SCHOOLS, Spell, actionTypeFromCastingTime
+  Feat, SPELL_SCHOOLS, Spell, actionTypeFromCastingTime
 } from '../../core/models/content.model';
 import { CharacterService } from '../../core/services/character.service';
 import { ContentService } from '../../core/services/content.service';
@@ -55,8 +55,12 @@ export class CharacterSheetComponent implements OnInit {
   readonly raceModal = signal(false);
   readonly bgModal = signal(false);
   readonly newRaceId = signal('');
+  readonly newSubraceId = signal<string | null>(null);
   readonly newBgId = signal('');
   readonly addFeatureModal = signal(false);
+  readonly featDetail = signal<Feat | null>(null);
+  readonly addFeatModal = signal(false);
+  selectedFeatId = '';
 
   // Form abilità personalizzata
   featureForm: CustomFeature = this.emptyFeatureForm();
@@ -168,7 +172,10 @@ export class CharacterSheetComponent implements OnInit {
   }
 
   // ---------- Header ----------
-  raceName(): string { return this.content.raceMap().get(this.char()?.raceId ?? '')?.name ?? '—'; }
+  raceName(): string {
+    const c = this.char();
+    return c ? this.rules.effectiveRaceName(c) : '—';
+  }
   backgroundName(): string { return this.content.backgroundMap().get(this.char()?.backgroundId ?? '')?.name ?? '—'; }
   className(id: string): string { return this.content.classMap().get(id)?.name ?? id; }
   subclassName(id: string): string { return this.content.subclassMap().get(id)?.name ?? id; }
@@ -503,15 +510,38 @@ export class CharacterSheetComponent implements OnInit {
   // ---------- Cambio razza (con avviso conseguenze) ----------
   openRaceModal(): void {
     this.newRaceId.set(this.char()?.raceId ?? '');
+    this.newSubraceId.set(this.char()?.subraceId ?? null);
     this.raceModal.set(true);
+  }
+
+  onNewRaceSelected(raceId: string): void {
+    this.newRaceId.set(raceId);
+    this.newSubraceId.set(null);
   }
 
   newRace() {
     return this.content.raceMap().get(this.newRaceId());
   }
 
+  newEffectiveRace() {
+    return this.rules.effectiveRace(this.newRaceId(), this.newSubraceId());
+  }
+
+  currentEffectiveRace() {
+    const c = this.char();
+    return c ? this.rules.effectiveRace(c.raceId, c.subraceId) : undefined;
+  }
+
   raceChanged(): boolean {
-    return !!this.newRaceId() && this.newRaceId() !== this.char()?.raceId;
+    const c = this.char();
+    return !!this.newRaceId() &&
+      (this.newRaceId() !== c?.raceId || (this.newSubraceId() ?? null) !== (c?.subraceId ?? null));
+  }
+
+  /** Vero se la selezione è completa (sottorazza scelta quando richiesta). */
+  raceSelectionComplete(): boolean {
+    const race = this.newRace();
+    return !!race && (!race.subraces?.length || !!this.newSubraceId());
   }
 
   bonusLabel(bonuses: Partial<Record<AbilityKey, number>> | undefined): string {
@@ -522,17 +552,17 @@ export class CharacterSheetComponent implements OnInit {
     return parts.length ? parts.join(', ') : '—';
   }
 
-  traitNames(raceId: string): string {
-    const race = this.content.raceMap().get(raceId);
-    return race?.traits.map(t => t.name).join(', ') || '—';
+  effectiveTraitNames(eff: { traits: { name: string }[] } | undefined): string {
+    return eff?.traits.map(t => t.name).join(', ') || '—';
   }
 
   confirmRaceChange(): void {
-    const newRace = this.newRace();
-    if (!newRace || !this.raceChanged()) return;
+    const eff = this.newEffectiveRace();
+    if (!eff || !this.raceChanged() || !this.raceSelectionComplete()) return;
     this.patch(c => {
-      c.raceId = newRace.id;
-      c.combat.speed = newRace.speed;
+      c.raceId = eff.race.id;
+      c.subraceId = eff.subrace?.id ?? null;
+      c.combat.speed = eff.speed;
     });
     this.raceModal.set(false);
   }
@@ -604,15 +634,90 @@ export class CharacterSheetComponent implements OnInit {
     });
   }
 
-  /** Riposo breve: recupera le risorse a riposo breve. Riposo lungo: tutte tranne quelle manuali. */
+  /**
+   * Riposo breve: recupera le risorse a riposo breve.
+   * Riposo lungo (🌙): ripristina punti ferita, TS contro morte, slot incantesimo
+   * e tutte le risorse tranne quelle a recupero manuale.
+   */
   rest(kind: 'short' | 'long'): void {
     this.patch(c => {
       for (const res of c.resources) {
         if (kind === 'short' && res.recovery === 'short-rest') res.used = 0;
         if (kind === 'long' && res.recovery !== 'manual') res.used = 0;
       }
-      if (kind === 'long') c.spellSlotsUsed = {};
+      if (kind === 'long') {
+        c.spellSlotsUsed = {};
+        c.combat.currentHp = c.combat.maxHp;
+        c.combat.tempHp = 0;
+        c.combat.deathSaveSuccesses = 0;
+        c.combat.deathSaveFailures = 0;
+      }
     });
+  }
+
+  // ---------- Stampa ----------
+  printSheet(): void {
+    window.print();
+  }
+
+  // ---------- Incantesimi per livello ----------
+  /** Livelli (>0) per cui il personaggio conosce almeno un incantesimo. */
+  knownSpellLevels(): number[] {
+    const levels = new Set(this.knownSpells().filter(s => s.level > 0).map(s => s.level));
+    return [...levels].sort((a, b) => a - b);
+  }
+
+  knownByLevel(level: number): Spell[] {
+    return this.knownSpells().filter(s => s.level === level);
+  }
+
+  /** Etichetta degli utilizzi per un livello di slot (slot standard e/o slot del patto). */
+  slotLabel(level: number): string {
+    const parts: string[] = [];
+    const slot = this.slots().find(s => s.level === level);
+    if (slot) parts.push(`${slot.total - this.slotsUsed(level)}/${slot.total} utilizzi`);
+    const pact = this.pact();
+    if (pact && pact.slotLevel === level) parts.push(`${pact.count} slot del patto`);
+    return parts.length ? parts.join(' · ') : 'nessuno slot';
+  }
+
+  // ---------- Talenti ----------
+  characterFeats(): Feat[] {
+    const c = this.char();
+    if (!c) return [];
+    return c.featIds
+      .map(id => this.content.featMap().get(id))
+      .filter((f): f is Feat => !!f)
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
+  availableFeats(): Feat[] {
+    const assigned = new Set(this.char()?.featIds ?? []);
+    return this.content.feats().filter(f => !assigned.has(f.id));
+  }
+
+  selectedFeat(): Feat | undefined {
+    return this.content.featMap().get(this.selectedFeatId);
+  }
+
+  openAddFeat(): void {
+    this.selectedFeatId = '';
+    this.addFeatModal.set(true);
+  }
+
+  addFeat(): void {
+    const feat = this.selectedFeat();
+    if (!feat) return;
+    this.patch(c => {
+      if (!c.featIds.includes(feat.id)) c.featIds.push(feat.id);
+    });
+    this.addFeatModal.set(false);
+  }
+
+  removeFeat(featId: string, event?: Event): void {
+    event?.stopPropagation();
+    this.patch(c => { c.featIds = c.featIds.filter(id => id !== featId); });
+    if (this.featDetail()?.id === featId) this.featDetail.set(null);
   }
 
   // ---------- Abilità personalizzate ----------

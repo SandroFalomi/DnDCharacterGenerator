@@ -2,7 +2,7 @@ import { Injectable, computed, signal } from '@angular/core';
 import { Table } from 'dexie';
 import { db } from '../db/app-db';
 import {
-  Background, DndClass, OptionPool, Race, SkillDef, Spell, Subclass
+  Background, DndClass, Feat, OptionPool, Race, SkillDef, Spell, Subclass
 } from '../models/content.model';
 import { CLASSES } from '../../data/classes';
 import { SUBCLASSES } from '../../data/subclasses';
@@ -10,10 +10,14 @@ import { BACKGROUNDS } from '../../data/backgrounds';
 import { SPELLS } from '../../data/spells';
 import { OPTION_POOLS } from '../../data/option-pools';
 import { RACES } from '../../data/races';
+import { FEATS } from '../../data/feats';
 import { SKILLS } from '../../data/skills';
 
 const SEED_KEY = 'content-seed-version';
-const SEED_VERSION = 3;
+const SEED_VERSION = 4;
+
+// Vecchi id razza sostituiti dal sistema razza + sottorazza
+const LEGACY_RACE_IDS = ['elfo-alto', 'nano-colline', 'halfling-piedelesto', 'gnomo-rocce'];
 
 // ============================================================
 // Repository dei contenuti di catalogo.
@@ -30,6 +34,7 @@ export class ContentService {
   readonly spells = signal<Spell[]>([]);
   readonly optionPools = signal<OptionPool[]>([]);
   readonly races = signal<Race[]>([]);
+  readonly feats = signal<Feat[]>([]);
   readonly skills: SkillDef[] = SKILLS;
   readonly ready = signal(false);
 
@@ -39,6 +44,7 @@ export class ContentService {
   readonly spellMap = computed(() => new Map(this.spells().map(s => [s.id, s])));
   readonly poolMap = computed(() => new Map(this.optionPools().map(p => [p.id, p])));
   readonly raceMap = computed(() => new Map(this.races().map(r => [r.id, r])));
+  readonly featMap = computed(() => new Map(this.feats().map(f => [f.id, f])));
   readonly skillMap = new Map(SKILLS.map(s => [s.id, s]));
 
   async init(): Promise<void> {
@@ -54,13 +60,14 @@ export class ContentService {
   }
 
   private async seedAll(): Promise<void> {
-    await db.transaction('rw', [db.classes, db.subclasses, db.backgrounds, db.spells, db.optionPools, db.races], async () => {
+    await db.transaction('rw', [db.classes, db.subclasses, db.backgrounds, db.spells, db.optionPools, db.races, db.feats], async () => {
       await db.classes.bulkPut(CLASSES);
       await db.subclasses.bulkPut(SUBCLASSES);
       await db.backgrounds.bulkPut(BACKGROUNDS);
       await db.spells.bulkPut(SPELLS);
       await db.optionPools.bulkPut(OPTION_POOLS);
       await db.races.bulkPut(RACES);
+      await db.feats.bulkPut(FEATS);
     });
   }
 
@@ -69,10 +76,10 @@ export class ContentService {
    * I personaggi salvati non vengono toccati.
    */
   async resetCatalog(): Promise<void> {
-    await db.transaction('rw', [db.classes, db.subclasses, db.backgrounds, db.spells, db.optionPools, db.races, db.meta], async () => {
+    await db.transaction('rw', [db.classes, db.subclasses, db.backgrounds, db.spells, db.optionPools, db.races, db.feats, db.meta], async () => {
       await Promise.all([
         db.classes.clear(), db.subclasses.clear(), db.backgrounds.clear(),
-        db.spells.clear(), db.optionPools.clear(), db.races.clear()
+        db.spells.clear(), db.optionPools.clear(), db.races.clear(), db.feats.clear()
       ]);
       await db.classes.bulkPut(CLASSES);
       await db.subclasses.bulkPut(SUBCLASSES);
@@ -80,6 +87,7 @@ export class ContentService {
       await db.spells.bulkPut(SPELLS);
       await db.optionPools.bulkPut(OPTION_POOLS);
       await db.races.bulkPut(RACES);
+      await db.feats.bulkPut(FEATS);
       await db.meta.put({ key: SEED_KEY, value: SEED_VERSION });
     });
     await this.reloadAll();
@@ -100,12 +108,16 @@ export class ContentService {
     }));
     await db.spells.bulkPut(repaired);
 
+    // Rimuove le vecchie razze ora rappresentate come sottorazze
+    await db.races.bulkDelete(LEGACY_RACE_IDS);
+
     await this.dedupeTable(db.spells, s => s.name, new Set(SPELLS.map(s => s.id)));
     await this.dedupeTable(db.backgrounds, b => b.name, new Set(BACKGROUNDS.map(b => b.id)));
     await this.dedupeTable(db.classes, c => c.name, new Set(CLASSES.map(c => c.id)));
     await this.dedupeTable(db.subclasses, s => `${s.classId}|${s.name}`, new Set(SUBCLASSES.map(s => s.id)));
     await this.dedupeTable(db.optionPools, p => p.name, new Set(OPTION_POOLS.map(p => p.id)));
     await this.dedupeTable(db.races, r => r.name, new Set(RACES.map(r => r.id)));
+    await this.dedupeTable(db.feats, f => f.name, new Set(FEATS.map(f => f.id)));
   }
 
   private async dedupeTable<T extends { id: string; name: string }>(
@@ -133,9 +145,9 @@ export class ContentService {
   }
 
   async reloadAll(): Promise<void> {
-    const [classes, subclasses, backgrounds, spells, pools, races] = await Promise.all([
+    const [classes, subclasses, backgrounds, spells, pools, races, feats] = await Promise.all([
       db.classes.toArray(), db.subclasses.toArray(), db.backgrounds.toArray(),
-      db.spells.toArray(), db.optionPools.toArray(), db.races.toArray()
+      db.spells.toArray(), db.optionPools.toArray(), db.races.toArray(), db.feats.toArray()
     ]);
     this.classes.set(classes.sort((a, b) => a.name.localeCompare(b.name)));
     this.subclasses.set(subclasses.sort((a, b) => a.name.localeCompare(b.name)));
@@ -143,6 +155,7 @@ export class ContentService {
     this.spells.set(spells.sort((a, b) => a.level - b.level || a.name.localeCompare(b.name)));
     this.optionPools.set(pools.sort((a, b) => a.name.localeCompare(b.name)));
     this.races.set(races.sort((a, b) => a.name.localeCompare(b.name)));
+    this.feats.set(feats.sort((a, b) => a.name.localeCompare(b.name)));
   }
 
   subclassesOf(classId: string): Subclass[] {
@@ -174,17 +187,22 @@ export class ContentService {
   async deleteSpell(id: string): Promise<void> { await db.spells.delete(id); await this.reloadAll(); }
   async savePool(p: OptionPool): Promise<void> { await db.optionPools.put(p); await this.reloadAll(); }
   async deletePool(id: string): Promise<void> { await db.optionPools.delete(id); await this.reloadAll(); }
+  async saveRace(r: Race): Promise<void> { await db.races.put(r); await this.reloadAll(); }
+  async deleteRace(id: string): Promise<void> { await db.races.delete(id); await this.reloadAll(); }
+  async saveFeat(f: Feat): Promise<void> { await db.feats.put(f); await this.reloadAll(); }
+  async deleteFeat(id: string): Promise<void> { await db.feats.delete(id); await this.reloadAll(); }
 
   async bulkImport(payload: {
     classes?: DndClass[]; subclasses?: Subclass[]; backgrounds?: Background[];
-    spells?: Spell[]; optionPools?: OptionPool[];
+    spells?: Spell[]; optionPools?: OptionPool[]; feats?: Feat[];
   }): Promise<void> {
-    await db.transaction('rw', [db.classes, db.subclasses, db.backgrounds, db.spells, db.optionPools], async () => {
+    await db.transaction('rw', [db.classes, db.subclasses, db.backgrounds, db.spells, db.optionPools, db.feats], async () => {
       if (payload.classes?.length) await db.classes.bulkPut(payload.classes);
       if (payload.subclasses?.length) await db.subclasses.bulkPut(payload.subclasses);
       if (payload.backgrounds?.length) await db.backgrounds.bulkPut(payload.backgrounds);
       if (payload.spells?.length) await db.spells.bulkPut(payload.spells);
       if (payload.optionPools?.length) await db.optionPools.bulkPut(payload.optionPools);
+      if (payload.feats?.length) await db.feats.bulkPut(payload.feats);
     });
     await this.reloadAll();
   }

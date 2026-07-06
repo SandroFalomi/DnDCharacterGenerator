@@ -58,6 +58,15 @@ export interface Trait {
   actionType?: ActionType;   // per i tratti razziali attivabili (es. soffio del dragonide)
 }
 
+export interface Subrace {
+  id: string;
+  name: string;
+  description?: string;
+  abilityBonuses: Partial<AbilityScores>;   // si sommano a quelli della razza base
+  traits: Trait[];                          // si aggiungono ai tratti della razza base
+  speed?: number;                           // se presente, sostituisce la velocità base
+}
+
 export interface Race {
   id: string;
   name: string;
@@ -68,6 +77,18 @@ export interface Race {
   speed: number;
   languages: string[];
   icon: string;
+  subraces?: Subrace[];
+}
+
+// ------------------------------------------------------------
+// Talenti
+// ------------------------------------------------------------
+export interface Feat {
+  id: string;
+  name: string;
+  description: string;
+  prerequisite?: string;    // es. "Forza 13 o superiore", "Capacità di lanciare incantesimi"
+  benefits?: string[];      // elenco puntato dei bonus concessi
 }
 
 // ------------------------------------------------------------

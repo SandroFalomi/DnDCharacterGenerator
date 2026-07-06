@@ -4,6 +4,7 @@ import { trigger, transition, style, animate } from '@angular/animations';
 import { WizardService } from './wizard.service';
 import { RulesService } from '../../core/services/rules.service';
 import { CharacterService } from '../../core/services/character.service';
+import { ContentService } from '../../core/services/content.service';
 import { StepNameComponent } from './steps/step-name';
 import { StepRaceComponent } from './steps/step-race';
 import { StepBackgroundComponent } from './steps/step-background';
@@ -102,6 +103,7 @@ const STEP_LABELS: Record<StepId, string> = {
 export class WizardComponent implements OnInit {
   readonly wizard = inject(WizardService);
   private rules = inject(RulesService);
+  private content = inject(ContentService);
   private characters = inject(CharacterService);
   private router = inject(Router);
 
@@ -122,7 +124,11 @@ export class WizardComponent implements OnInit {
     const w = this.wizard;
     switch (this.current()) {
       case 'name': return w.name().trim().length > 0;
-      case 'race': return !!w.raceId();
+      case 'race': {
+        if (!w.raceId()) return false;
+        const race = this.wizardContentRace();
+        return !race?.subraces?.length || !!w.subraceId();
+      }
       case 'background': return !!w.backgroundId();
       case 'class': return w.classes().length > 0 && w.classes().every(c => c.level >= 1 && !!c.classId);
       case 'stats': return w.racialChoiceMade();
@@ -137,6 +143,10 @@ export class WizardComponent implements OnInit {
 
   ngOnInit(): void {
     this.wizard.reset();
+  }
+
+  private wizardContentRace() {
+    return this.content.raceMap().get(this.wizard.raceId());
   }
 
   next(): void {

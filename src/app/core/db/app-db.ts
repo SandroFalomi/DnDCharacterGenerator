@@ -1,6 +1,6 @@
 import Dexie, { Table } from 'dexie';
 import { Character } from '../models/character.model';
-import { Background, DndClass, OptionPool, Race, Spell, Subclass } from '../models/content.model';
+import { Background, DndClass, Feat, OptionPool, Race, Spell, Subclass } from '../models/content.model';
 
 // ============================================================
 // Database IndexedDB via Dexie.js
@@ -15,6 +15,7 @@ export class AppDB extends Dexie {
   spells!: Table<Spell, string>;
   optionPools!: Table<OptionPool, string>;
   races!: Table<Race, string>;
+  feats!: Table<Feat, string>;
   meta!: Table<{ key: string; value: unknown }, string>;
 
   constructor() {
@@ -28,6 +29,9 @@ export class AppDB extends Dexie {
       optionPools: 'id, name',
       races: 'id, name',
       meta: 'key'
+    });
+    this.version(2).stores({
+      feats: 'id, name'
     });
   }
 }

@@ -4,9 +4,14 @@
   <div class="page sheet">
 
     <!-- Barra superiore -->
-    <div class="flex-between mb-2">
+    <div class="flex-between mb-2 top-bar">
       <button type="button" class="btn btn-ghost" (click)="goHome()">← Torna alla Lista</button>
-      <button type="button" class="btn btn-primary btn-sm" (click)="classesModal.set(true)">⚔ Gestisci Classi & Multiclasse</button>
+      <div class="flex">
+        <button type="button" class="btn btn-ghost btn-sm" title="Riposo breve: recupera le risorse a riposo breve" (click)="rest('short')">⏳ Riposo Breve</button>
+        <button type="button" class="btn btn-primary btn-sm rest-btn" title="Riposo lungo: ripristina PF, slot incantesimo e risorse" (click)="rest('long')">🌙 Riposo Lungo</button>
+        <button type="button" class="btn btn-ghost btn-sm" title="Stampa la scheda (o salva in PDF)" (click)="printSheet()">🖨 Stampa</button>
+        <button type="button" class="btn btn-primary btn-sm" (click)="classesModal.set(true)">⚔ Gestisci Classi & Multiclasse</button>
+      </div>
     </div>
 
     <!-- Intestazione -->
@@ -192,11 +197,7 @@
         <section class="card resource-box">
           <div class="flex-between mb-1">
             <h4 class="box-title">⏳ Risorse & Utilizzi</h4>
-            <div class="flex">
-              <button type="button" class="btn btn-ghost btn-sm" title="Recupera le risorse a riposo breve" (click)="rest('short')">☾ Riposo breve</button>
-              <button type="button" class="btn btn-ghost btn-sm" title="Recupera tutte le risorse (tranne quelle manuali) e gli slot incantesimo" (click)="rest('long')">☀ Riposo lungo</button>
-              <button type="button" class="btn btn-ghost btn-sm" (click)="addResource()">+ Aggiungi</button>
-            </div>
+            <button type="button" class="btn btn-ghost btn-sm" (click)="addResource()">+ Aggiungi</button>
           </div>
           @if (c.resources.length === 0) {
             <p class="small muted">Nessuna risorsa registrata. Aggiungi abilità con utilizzi limitati (es. Ira, Ispirazione Bardica, Recupero Energie…).</p>
@@ -246,9 +247,9 @@
 
             @if (knownSpells().length === 0) {
               <p class="small muted mt-1">Nessun incantesimo conosciuto. Usa "Gestisci Incantesimi" per aggiungerne.</p>
-            } @else if (knownSpells().length <= 8) {
+            } @else if (knownSpells().length <= 14) {
               @if (cantrips().length > 0) {
-                <h5 class="spell-group-title">Trucchetti</h5>
+                <h5 class="spell-group-title">Trucchetti <span class="slot-note">— a volontà</span></h5>
                 <div class="stat-chips">
                   @for (spell of cantrips(); track spell.id) {
                     <button type="button" class="badge badge-arcane spell-chip" (click)="spellDetail.set(spell)">
@@ -258,13 +259,13 @@
                   }
                 </div>
               }
-              @if (leveledSpells().length > 0) {
-                <h5 class="spell-group-title">Incantesimi</h5>
+              @for (lvl of knownSpellLevels(); track lvl) {
+                <h5 class="spell-group-title">Incantesimi di {{ lvl }}° livello <span class="slot-note">— {{ slotLabel(lvl) }}</span></h5>
                 <div class="stat-chips">
-                  @for (spell of leveledSpells(); track spell.id) {
+                  @for (spell of knownByLevel(lvl); track spell.id) {
                     <button type="button" class="badge badge-arcane spell-chip" (click)="spellDetail.set(spell)">
                       <span class="action-badge" [class]="'at-' + spellActionType(spell)">{{ actionIcons[spellActionType(spell)] }}</span>
-                      {{ spell.name }} ({{ spell.level }})
+                      {{ spell.name }}
                       @if (hasPreparedCasting() && isPrepared(spell.id)) { ✦ }
                     </button>
                   }
@@ -347,8 +348,76 @@
             @if (bg.languages.length) { <p class="small muted">Lingue: {{ bg.languages.join(', ') }}</p> }
           </section>
         }
+
+        <!-- Talenti -->
+        <section class="card card-ornate">
+          <div class="flex-between mb-1">
+            <h4 class="box-title">🎖 Talenti</h4>
+            <button type="button" class="btn btn-ghost btn-sm" (click)="openAddFeat()">+ Aggiungi</button>
+          </div>
+          @if (characterFeats().length === 0) {
+            <p class="small muted">Nessun talento assegnato.</p>
+          }
+          @for (feat of characterFeats(); track feat.id) {
+            <div class="feature-row-compact">
+              <button type="button" class="feature-title" (click)="featDetail.set(feat)">
+                {{ feat.name }}
+                @if (feat.prerequisite) { <span class="tiny muted" [title]="feat.prerequisite">⚠ prereq.</span> }
+              </button>
+              <button type="button" class="fav-star delete-feature" title="Rimuovi talento" (click)="removeFeat(feat.id, $event)">🗑</button>
+            </div>
+          }
+        </section>
       </div>
     </div>
+
+    <!-- ============ Versione stampabile: dettaglio completo ============ -->
+    <section class="print-only">
+      <h3>Abilità & Privilegi — dettaglio completo</h3>
+      @for (fws of allFeatures(); track fws.feature.id) {
+        <div class="print-item">
+          <strong>{{ fws.feature.name }}</strong> <em>({{ fws.source }} · {{ actionLabels[actionTypeOf(fws)] }}@if (usesBadge(fws)) {, {{ usesBadge(fws) }}})</em>
+          <p>{{ fws.feature.description }}</p>
+          @if (fws.feature.selection && selectedOptionNames(fws).length > 0) {
+            <p><em>Selezioni:</em> {{ selectedOptionNames(fws).join(', ') }}</p>
+          }
+        </div>
+      }
+      @if (characterFeats().length > 0) {
+        <h3>Talenti</h3>
+        @for (feat of characterFeats(); track feat.id) {
+          <div class="print-item">
+            <strong>{{ feat.name }}</strong>
+            @if (feat.prerequisite) { <em>(Prerequisito: {{ feat.prerequisite }})</em> }
+            <p>{{ feat.description }}</p>
+            @if (feat.benefits?.length) {
+              <ul>@for (b of feat.benefits; track b) { <li>{{ b }}</li> }</ul>
+            }
+          </div>
+        }
+      }
+      @if (knownSpells().length > 0) {
+        <h3>Incantesimi</h3>
+        @if (cantrips().length > 0) {
+          <h4>Trucchetti</h4>
+          @for (spell of cantrips(); track spell.id) {
+            <div class="print-item">
+              <strong>{{ spell.name }}</strong> <em>({{ spell.school }} · {{ spell.castingTime }} · {{ spell.range }})</em>
+              <p>{{ spell.description }}</p>
+            </div>
+          }
+        }
+        @for (lvl of knownSpellLevels(); track lvl) {
+          <h4>Incantesimi di {{ lvl }}° livello — {{ slotLabel(lvl) }}</h4>
+          @for (spell of knownByLevel(lvl); track spell.id) {
+            <div class="print-item">
+              <strong>{{ spell.name }}</strong> <em>({{ spell.school }} · {{ spell.castingTime }} · {{ spell.range }} · {{ spell.duration }}@if (spell.concentration) {, concentrazione})</em>
+              <p>{{ spell.description }}</p>
+            </div>
+          }
+        }
+      }
+    </section>
   </div>
 
   <!-- ============ MODALE: elenco completo abilità ============ -->
@@ -613,27 +682,41 @@
   <!-- ============ MODALE: cambio razza ============ -->
   @if (raceModal()) {
     <app-modal title="Cambia Razza" width="620px" [hasFooter]="true" (closed)="raceModal.set(false)">
-      <div class="form-field">
-        <label>Nuova razza</label>
-        <select [ngModel]="newRaceId()" (ngModelChange)="newRaceId.set($event)">
-          @for (race of content.races(); track race.id) {
-            <option [value]="race.id">{{ race.icon }} {{ race.name }}</option>
-          }
-        </select>
+      <div class="grid-2">
+        <div class="form-field">
+          <label>Nuova razza</label>
+          <select [ngModel]="newRaceId()" (ngModelChange)="onNewRaceSelected($event)">
+            @for (race of content.races(); track race.id) {
+              <option [value]="race.id">{{ race.icon }} {{ race.name }}</option>
+            }
+          </select>
+        </div>
+        @if (newRace()?.subraces?.length) {
+          <div class="form-field">
+            <label>Sottorazza</label>
+            <select [ngModel]="newSubraceId()" (ngModelChange)="newSubraceId.set($event)">
+              <option [ngValue]="null">— Scegli —</option>
+              @for (sub of newRace()?.subraces ?? []; track sub.id) {
+                <option [ngValue]="sub.id">{{ sub.name }}</option>
+              }
+            </select>
+            @if (!newSubraceId()) { <span class="hint lock-hint">Questa razza richiede una sottorazza.</span> }
+          </div>
+        }
       </div>
-      @if (raceChanged()) {
+      @if (raceChanged() && raceSelectionComplete()) {
         <div class="warning-box">
-          <strong>⚠ Attenzione: cambiando razza da {{ raceName() }} a {{ newRace()?.name }}</strong>
+          <strong>⚠ Attenzione: cambiando razza da {{ raceName() }} a {{ newEffectiveRace()?.name }}</strong>
           <ul>
             @if (c.applyRacialBonuses) {
               <li>I punteggi caratteristica verranno ricalcolati: i bonus passeranno da
-                <strong>{{ bonusLabel(race()?.abilityBonuses) }}</strong> a
-                <strong>{{ bonusLabel(newRace()?.abilityBonuses) }}</strong>.</li>
+                <strong>{{ bonusLabel(currentEffectiveRace()?.abilityBonuses) }}</strong> a
+                <strong>{{ bonusLabel(newEffectiveRace()?.abilityBonuses) }}</strong>.</li>
             }
-            <li>Perderai i tratti razziali: <em>{{ traitNames(c.raceId) }}</em>.</li>
-            <li>Otterrai i tratti: <em>{{ traitNames(newRaceId()) }}</em>.</li>
-            @if (race()?.speed !== newRace()?.speed) {
-              <li>La velocità di movimento passerà da <strong>{{ race()?.speed }} m</strong> a <strong>{{ newRace()?.speed }} m</strong>.</li>
+            <li>Perderai i tratti razziali: <em>{{ effectiveTraitNames(currentEffectiveRace()) }}</em>.</li>
+            <li>Otterrai i tratti: <em>{{ effectiveTraitNames(newEffectiveRace()) }}</em>.</li>
+            @if (currentEffectiveRace()?.speed !== newEffectiveRace()?.speed) {
+              <li>La velocità di movimento passerà da <strong>{{ currentEffectiveRace()?.speed }} m</strong> a <strong>{{ newEffectiveRace()?.speed }} m</strong>.</li>
             }
             <li>Eventuali competenze o capacità concesse dalla vecchia razza non saranno più attive.</li>
           </ul>
@@ -641,7 +724,54 @@
       }
       <div footer>
         <button type="button" class="btn btn-ghost" (click)="raceModal.set(false)">Annulla</button>
-        <button type="button" class="btn btn-primary" [disabled]="!raceChanged()" (click)="confirmRaceChange()">Conferma Cambio</button>
+        <button type="button" class="btn btn-primary" [disabled]="!raceChanged() || !raceSelectionComplete()" (click)="confirmRaceChange()">Conferma Cambio</button>
+      </div>
+    </app-modal>
+  }
+
+  <!-- ============ MODALE: dettaglio talento ============ -->
+  @if (featDetail(); as feat) {
+    <app-modal [title]="feat.name" width="560px" (closed)="featDetail.set(null)">
+      @if (feat.prerequisite) {
+        <p class="small mb-1"><span class="badge">Prerequisito</span> {{ feat.prerequisite }}</p>
+      }
+      <p>{{ feat.description }}</p>
+      @if (feat.benefits?.length) {
+        <h4 class="mt-2 mb-1 gold">Bonus</h4>
+        <ul class="benefit-list">
+          @for (benefit of feat.benefits; track benefit) { <li>{{ benefit }}</li> }
+        </ul>
+      }
+      <p class="small muted mt-2">Se il talento ha utilizzi limitati, puoi tracciarli nella sezione "Risorse & Utilizzi".</p>
+    </app-modal>
+  }
+
+  <!-- ============ MODALE: aggiungi talento ============ -->
+  @if (addFeatModal()) {
+    <app-modal title="Aggiungi Talento" width="560px" [hasFooter]="true" (closed)="addFeatModal.set(false)">
+      <div class="form-field">
+        <label>Talento</label>
+        <select [(ngModel)]="selectedFeatId">
+          <option value="">— Scegli un talento —</option>
+          @for (feat of availableFeats(); track feat.id) {
+            <option [value]="feat.id">{{ feat.name }}</option>
+          }
+        </select>
+      </div>
+      @if (selectedFeat(); as feat) {
+        @if (feat.prerequisite) {
+          <p class="small mb-1"><span class="badge">Prerequisito</span> {{ feat.prerequisite }}</p>
+        }
+        <p class="small muted">{{ feat.description }}</p>
+        @if (feat.benefits?.length) {
+          <ul class="benefit-list small">
+            @for (benefit of feat.benefits; track benefit) { <li>{{ benefit }}</li> }
+          </ul>
+        }
+      }
+      <div footer>
+        <button type="button" class="btn btn-ghost" (click)="addFeatModal.set(false)">Annulla</button>
+        <button type="button" class="btn btn-primary" [disabled]="!selectedFeatId" (click)="addFeat()">✓ Aggiungi</button>
       </div>
     </app-modal>
   }

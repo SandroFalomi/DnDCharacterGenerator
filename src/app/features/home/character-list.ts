@@ -122,7 +122,7 @@ export class CharacterListComponent implements OnInit {
   }
 
   raceName(char: Character): string {
-    return this.content.raceMap().get(char.raceId)?.name ?? 'Origine ignota';
+    return this.rules.effectiveRace(char.raceId, char.subraceId)?.name ?? 'Origine ignota';
   }
 
   raceIcon(char: Character): string {

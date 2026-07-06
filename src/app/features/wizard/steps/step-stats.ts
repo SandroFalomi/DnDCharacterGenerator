@@ -203,14 +203,14 @@ export class StepStatsComponent {
   private slots = signal<Record<AbilityKey, number[]>>({ STR: [], DEX: [], CON: [], INT: [], WIS: [], CHA: [] });
 
   raceName(): string {
-    return this.content.raceMap().get(this.wizard.raceId())?.name ?? '';
+    return this.rules.effectiveRace(this.wizard.raceId(), this.wizard.subraceId())?.name ?? '';
   }
 
   racialBonuses() {
-    const race = this.content.raceMap().get(this.wizard.raceId());
-    if (!race) return [];
-    return (Object.keys(race.abilityBonuses) as AbilityKey[])
-      .map(key => ({ key, value: race.abilityBonuses[key] ?? 0 }))
+    const eff = this.rules.effectiveRace(this.wizard.raceId(), this.wizard.subraceId());
+    if (!eff) return [];
+    return (Object.keys(eff.abilityBonuses) as AbilityKey[])
+      .map(key => ({ key, value: eff.abilityBonuses[key] ?? 0 }))
       .filter(b => b.value !== 0);
   }
 
@@ -306,8 +306,8 @@ export class StepStatsComponent {
 
   bonusOf(key: AbilityKey): number {
     if (!this.wizard.applyRacialBonuses()) return this.wizard.customAbilityBonuses()[key] ?? 0;
-    const race = this.content.raceMap().get(this.wizard.raceId());
-    return race?.abilityBonuses[key] ?? 0;
+    const eff = this.rules.effectiveRace(this.wizard.raceId(), this.wizard.subraceId());
+    return eff?.abilityBonuses[key] ?? 0;
   }
 
   finalOf(key: AbilityKey): number {

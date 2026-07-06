@@ -80,6 +80,7 @@ export interface Character {
   id?: number;                       // auto-increment Dexie
   name: string;
   raceId: string;
+  subraceId: string | null;
   backgroundId: string;
   classes: CharacterClassEntry[];    // multiclasse: prima voce = classe primaria
   alignment: string;
@@ -96,6 +97,7 @@ export interface Character {
   featureSelections: Record<string, string[]>;
   customFeatures: CustomFeature[];           // abilità aggiunte manualmente
   resources: CharacterResource[];            // risorse con utilizzi limitati
+  featIds: string[];                         // talenti assegnati (dal catalogo)
   knownSpellIds: string[];
   preparedSpellIds: string[];
   spellSlotsUsed: Record<number, number>;    // livello slot -> slot spesi
@@ -111,6 +113,7 @@ export function emptyCharacter(): Character {
   return {
     name: '',
     raceId: '',
+    subraceId: null,
     backgroundId: '',
     classes: [],
     alignment: '',
@@ -125,6 +128,7 @@ export function emptyCharacter(): Character {
     featureSelections: {},
     customFeatures: [],
     resources: [],
+    featIds: [],
     knownSpellIds: [],
     preparedSpellIds: [],
     spellSlotsUsed: {},
@@ -142,10 +146,18 @@ export function emptyCharacter(): Character {
   };
 }
 
+// Mappa dei vecchi id razza (quando le sottorazze erano razze separate)
+const LEGACY_RACE_MAP: Record<string, { raceId: string; subraceId: string }> = {
+  'elfo-alto': { raceId: 'elfo', subraceId: 'elfo-alto' },
+  'nano-colline': { raceId: 'nano', subraceId: 'nano-colline' },
+  'halfling-piedelesto': { raceId: 'halfling', subraceId: 'piedelesto' },
+  'gnomo-rocce': { raceId: 'gnomo', subraceId: 'gnomo-rocce' }
+};
+
 /**
  * Rende retrocompatibili i personaggi salvati con versioni precedenti del
- * modello: aggiunge i campi mancanti e converte l'equipaggiamento da
- * stringa unica a elenco di voci.
+ * modello: aggiunge i campi mancanti, converte l'equipaggiamento da stringa
+ * unica a elenco di voci e migra i vecchi id razza al sistema razza+sottorazza.
  */
 export function normalizeCharacter(char: Character): Character {
   const legacyEquipment = char.equipment as unknown;
@@ -154,15 +166,19 @@ export function normalizeCharacter(char: Character): Character {
     : typeof legacyEquipment === 'string' && legacyEquipment.trim()
       ? legacyEquipment.split(/[\n,]/).map(s => s.trim()).filter(Boolean)
       : [];
+  const legacyRace = LEGACY_RACE_MAP[char.raceId];
   return {
     ...char,
     equipment,
+    raceId: legacyRace?.raceId ?? char.raceId,
+    subraceId: legacyRace?.subraceId ?? char.subraceId ?? null,
     customAbilityBonuses: char.customAbilityBonuses ?? {},
     favoriteFeatureIds: char.favoriteFeatureIds ?? [],
     expertiseSelections: char.expertiseSelections ?? {},
     featureSelections: char.featureSelections ?? {},
     customFeatures: char.customFeatures ?? [],
     resources: char.resources ?? [],
+    featIds: char.featIds ?? [],
     knownSpellIds: char.knownSpellIds ?? [],
     preparedSpellIds: char.preparedSpellIds ?? [],
     spellSlotsUsed: char.spellSlotsUsed ?? {},
