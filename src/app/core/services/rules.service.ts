@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Character, CharacterClassEntry } from '../models/character.model';
+import { CUSTOM_SOURCE_LABELS, Character, CharacterClassEntry, CustomFeature } from '../models/character.model';
 import {
   ActionType, AbilityKey, AbilityScores, ClassFeature, SelectionConfig, Spell, SpellcastingConfig
 } from '../models/content.model';
@@ -8,8 +8,9 @@ import { ContentService } from './content.service';
 export interface FeatureWithSource {
   feature: ClassFeature;
   source: string;        // es. "Guerriero 3", "Maestro di Battaglia"
-  sourceType: 'class' | 'subclass' | 'race' | 'background';
+  sourceType: 'class' | 'subclass' | 'race' | 'background' | 'custom';
   classEntry?: CharacterClassEntry;
+  custom?: CustomFeature;   // presente solo per le abilità aggiunte manualmente
 }
 
 export interface ClassFeatureGroup {
@@ -115,6 +116,14 @@ export class RulesService {
     }
     for (const entry of char.classes) {
       result.push(...this.featuresForEntry(entry));
+    }
+    for (const cf of char.customFeatures ?? []) {
+      result.push({
+        feature: { id: cf.id, name: cf.name, description: cf.description, level: 0, actionType: cf.actionType },
+        source: CUSTOM_SOURCE_LABELS[cf.source] ?? 'Personalizzata',
+        sourceType: 'custom',
+        custom: cf
+      });
     }
     return result;
   }

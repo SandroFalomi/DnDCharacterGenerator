@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { db } from '../db/app-db';
-import { Character } from '../models/character.model';
+import { Character, normalizeCharacter } from '../models/character.model';
 
 @Injectable({ providedIn: 'root' })
 export class CharacterService {
@@ -11,14 +11,15 @@ export class CharacterService {
     this.loading.set(true);
     try {
       const list = await db.characters.toArray();
-      this.characters.set(list.sort((a, b) => b.updatedAt - a.updatedAt));
+      this.characters.set(list.map(normalizeCharacter).sort((a, b) => b.updatedAt - a.updatedAt));
     } finally {
       this.loading.set(false);
     }
   }
 
-  get(id: number): Promise<Character | undefined> {
-    return db.characters.get(id);
+  async get(id: number): Promise<Character | undefined> {
+    const char = await db.characters.get(id);
+    return char ? normalizeCharacter(char) : undefined;
   }
 
   async add(character: Character): Promise<number> {

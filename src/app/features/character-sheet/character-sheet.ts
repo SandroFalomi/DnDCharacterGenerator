@@ -2,7 +2,10 @@ import { Component, OnInit, computed, inject, signal } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { Character, CharacterClassEntry } from '../../core/models/character.model';
+import {
+  CUSTOM_SOURCE_LABELS, Character, CharacterClassEntry, CustomFeature, CustomFeatureSource,
+  RECOVERY_LABELS, ResourceRecovery
+} from '../../core/models/character.model';
 import {
   ABILITY_KEYS, ABILITY_LABELS, ABILITY_SHORT, ACTION_TYPE_ICONS, ACTION_TYPE_SHORT, ActionType, AbilityKey,
   SPELL_SCHOOLS, Spell, actionTypeFromCastingTime
@@ -33,6 +36,10 @@ export class CharacterSheetComponent implements OnInit {
   readonly actionIcons = ACTION_TYPE_ICONS;
   readonly actionLabels = ACTION_TYPE_SHORT;
   readonly actionFilters: ActionType[] = ['action', 'bonus', 'reaction'];
+  readonly recoveryLabels = RECOVERY_LABELS;
+  readonly recoveryKeys: ResourceRecovery[] = ['short-rest', 'long-rest', 'daily', 'manual'];
+  readonly customSourceLabels = CUSTOM_SOURCE_LABELS;
+  readonly customSourceKeys: CustomFeatureSource[] = ['class', 'subclass', 'race', 'background', 'feat', 'homebrew', 'manual'];
 
   readonly char = signal<Character | null>(null);
   readonly loading = signal(true);
@@ -45,6 +52,17 @@ export class CharacterSheetComponent implements OnInit {
   readonly spellDetail = signal<Spell | null>(null);
   readonly expandedFeature = signal('');
   readonly actionFilter = signal<ActionType | null>(null);
+  readonly raceModal = signal(false);
+  readonly bgModal = signal(false);
+  readonly newRaceId = signal('');
+  readonly newBgId = signal('');
+  readonly addFeatureModal = signal(false);
+
+  // Form abilità personalizzata
+  featureForm: CustomFeature = this.emptyFeatureForm();
+  catalogKind: 'class' | 'subclass' | 'race' | 'background' = 'class';
+  catalogEntityId = '';
+  catalogFeatureId = '';
 
   // Filtri modale incantesimi
   spellLevelFilter: number | null = null;
@@ -467,5 +485,217 @@ export class CharacterSheetComponent implements OnInit {
 
   race() {
     return this.content.raceMap().get(this.char()?.raceId ?? '');
+  }
+
+  // ---------- Equipaggiamento a elenco ----------
+  addEquipmentItem(): void {
+    this.patch(c => c.equipment.push(''));
+  }
+
+  removeEquipmentItem(index: number): void {
+    this.patch(c => c.equipment.splice(index, 1));
+  }
+
+  patchEquipmentItem(index: number, value: string): void {
+    this.patch(c => { c.equipment[index] = value; });
+  }
+
+  // ---------- Cambio razza (con avviso conseguenze) ----------
+  openRaceModal(): void {
+    this.newRaceId.set(this.char()?.raceId ?? '');
+    this.raceModal.set(true);
+  }
+
+  newRace() {
+    return this.content.raceMap().get(this.newRaceId());
+  }
+
+  raceChanged(): boolean {
+    return !!this.newRaceId() && this.newRaceId() !== this.char()?.raceId;
+  }
+
+  bonusLabel(bonuses: Partial<Record<AbilityKey, number>> | undefined): string {
+    if (!bonuses) return '—';
+    const parts = (Object.keys(bonuses) as AbilityKey[])
+      .filter(k => (bonuses[k] ?? 0) !== 0)
+      .map(k => `+${bonuses[k]} ${this.short[k]}`);
+    return parts.length ? parts.join(', ') : '—';
+  }
+
+  traitNames(raceId: string): string {
+    const race = this.content.raceMap().get(raceId);
+    return race?.traits.map(t => t.name).join(', ') || '—';
+  }
+
+  confirmRaceChange(): void {
+    const newRace = this.newRace();
+    if (!newRace || !this.raceChanged()) return;
+    this.patch(c => {
+      c.raceId = newRace.id;
+      c.combat.speed = newRace.speed;
+    });
+    this.raceModal.set(false);
+  }
+
+  // ---------- Cambio background (con avviso conseguenze) ----------
+  openBgModal(): void {
+    this.newBgId.set(this.char()?.backgroundId ?? '');
+    this.bgModal.set(true);
+  }
+
+  newBg() {
+    return this.content.backgroundMap().get(this.newBgId());
+  }
+
+  bgChanged(): boolean {
+    return !!this.newBgId() && this.newBgId() !== this.char()?.backgroundId;
+  }
+
+  bgSkillNames(bgId: string): string {
+    const bg = this.content.backgroundMap().get(bgId);
+    return bg?.skillProficiencies.map(id => this.skillName(id)).join(', ') || '—';
+  }
+
+  confirmBgChange(): void {
+    const newBg = this.newBg();
+    if (!newBg || !this.bgChanged()) return;
+    const oldBg = this.background();
+    this.patch(c => {
+      // rimuove le competenze del vecchio background e applica quelle del nuovo
+      const oldSkills = new Set(oldBg?.skillProficiencies ?? []);
+      c.skillProficiencies = c.skillProficiencies.filter(id => !oldSkills.has(id));
+      for (const id of newBg.skillProficiencies) {
+        if (!c.skillProficiencies.includes(id)) c.skillProficiencies.push(id);
+      }
+      c.backgroundId = newBg.id;
+    });
+    this.bgModal.set(false);
+  }
+
+  // ---------- Risorse con utilizzi limitati ----------
+  addResource(): void {
+    this.patch(c => c.resources.push({ name: '', maxUses: 1, used: 0, recovery: 'long-rest' }));
+  }
+
+  removeResource(index: number): void {
+    this.patch(c => c.resources.splice(index, 1));
+  }
+
+  patchResourceName(index: number, value: string): void {
+    this.patch(c => { c.resources[index].name = value; });
+  }
+
+  patchResourceMax(index: number, value: number): void {
+    this.patch(c => {
+      const max = Math.max(0, Number(value) || 0);
+      c.resources[index].maxUses = max;
+      c.resources[index].used = Math.min(c.resources[index].used, max);
+    });
+  }
+
+  patchResourceRecovery(index: number, value: ResourceRecovery): void {
+    this.patch(c => { c.resources[index].recovery = value; });
+  }
+
+  adjustResourceUsed(index: number, delta: number): void {
+    this.patch(c => {
+      const res = c.resources[index];
+      res.used = Math.max(0, Math.min(res.maxUses, res.used + delta));
+    });
+  }
+
+  /** Riposo breve: recupera le risorse a riposo breve. Riposo lungo: tutte tranne quelle manuali. */
+  rest(kind: 'short' | 'long'): void {
+    this.patch(c => {
+      for (const res of c.resources) {
+        if (kind === 'short' && res.recovery === 'short-rest') res.used = 0;
+        if (kind === 'long' && res.recovery !== 'manual') res.used = 0;
+      }
+      if (kind === 'long') c.spellSlotsUsed = {};
+    });
+  }
+
+  // ---------- Abilità personalizzate ----------
+  private emptyFeatureForm(): CustomFeature {
+    return { id: '', name: '', description: '', source: 'manual', actionType: 'none', maxUses: 0, recovery: 'long-rest' };
+  }
+
+  openAddFeature(): void {
+    this.featureForm = this.emptyFeatureForm();
+    this.catalogKind = 'class';
+    this.catalogEntityId = '';
+    this.catalogFeatureId = '';
+    this.addFeatureModal.set(true);
+  }
+
+  catalogEntities(): { id: string; name: string }[] {
+    switch (this.catalogKind) {
+      case 'class': return this.content.classes();
+      case 'subclass': return this.content.subclasses();
+      case 'race': return this.content.races();
+      case 'background': return this.content.backgrounds();
+    }
+  }
+
+  catalogFeatures(): { id: string; name: string; description: string; actionType?: ActionType }[] {
+    const id = this.catalogEntityId;
+    if (!id) return [];
+    switch (this.catalogKind) {
+      case 'class': return this.content.classMap().get(id)?.features ?? [];
+      case 'subclass': return this.content.subclassMap().get(id)?.features ?? [];
+      case 'race': return (this.content.raceMap().get(id)?.traits ?? []).map((t, i) => ({ id: `${id}-trait-${i}`, name: t.name, description: t.description, actionType: t.actionType }));
+      case 'background': {
+        const bg = this.content.backgroundMap().get(id);
+        return bg ? [{ id: `${id}-priv`, name: bg.feature.name, description: bg.feature.description, actionType: bg.feature.actionType }] : [];
+      }
+    }
+  }
+
+  applyCatalogPick(): void {
+    const picked = this.catalogFeatures().find(f => f.id === this.catalogFeatureId);
+    if (!picked) return;
+    this.featureForm = {
+      ...this.featureForm,
+      name: picked.name,
+      description: picked.description,
+      actionType: picked.actionType ?? 'none',
+      source: this.catalogKind
+    };
+  }
+
+  saveCustomFeature(): void {
+    if (!this.featureForm.name.trim()) return;
+    const feature: CustomFeature = {
+      ...this.featureForm,
+      id: `custom-${Date.now()}`,
+      maxUses: Number(this.featureForm.maxUses) || 0
+    };
+    if (!feature.maxUses) {
+      delete feature.maxUses;
+      delete feature.recovery;
+    }
+    this.patch(c => c.customFeatures.push(feature));
+    this.addFeatureModal.set(false);
+  }
+
+  deleteCustomFeature(fws: FeatureWithSource, event?: Event): void {
+    event?.stopPropagation();
+    const id = fws.custom?.id;
+    if (!id) return;
+    this.patch(c => {
+      c.customFeatures = c.customFeatures.filter(f => f.id !== id);
+      c.favoriteFeatureIds = c.favoriteFeatureIds.filter(f => f !== id);
+    });
+    if (this.featureDetail()?.custom?.id === id) this.featureDetail.set(null);
+  }
+
+  customFeaturesList(): FeatureWithSource[] {
+    return this.allFeatures().filter(f => f.sourceType === 'custom');
+  }
+
+  usesBadge(fws: FeatureWithSource): string {
+    const cf = fws.custom;
+    if (!cf?.maxUses) return '';
+    return `${cf.maxUses}× / ${this.recoveryLabels[cf.recovery ?? 'long-rest']}`;
   }
 }

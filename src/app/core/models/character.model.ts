@@ -1,4 +1,4 @@
-import { AbilityKey, AbilityScores } from './content.model';
+import { AbilityKey, AbilityScores, ActionType } from './content.model';
 
 // ============================================================
 // Modello personaggio (con supporto multiclasse)
@@ -36,6 +36,46 @@ export interface CharacterTraits {
   flaws: string;
 }
 
+// ------------------------------------------------------------
+// Risorse con utilizzi limitati (ira, ispirazione bardica...)
+// ------------------------------------------------------------
+export type ResourceRecovery = 'short-rest' | 'long-rest' | 'daily' | 'manual';
+
+export const RECOVERY_LABELS: Record<ResourceRecovery, string> = {
+  'short-rest': 'Riposo breve',
+  'long-rest': 'Riposo lungo',
+  daily: 'Al giorno',
+  manual: 'Altro / Manuale'
+};
+
+export interface CharacterResource {
+  name: string;
+  maxUses: number;
+  used: number;              // utilizzi già spesi
+  recovery: ResourceRecovery;
+}
+
+// ------------------------------------------------------------
+// Abilità aggiunte manualmente al singolo personaggio
+// ------------------------------------------------------------
+export type CustomFeatureSource =
+  'class' | 'subclass' | 'race' | 'background' | 'feat' | 'homebrew' | 'manual';
+
+export const CUSTOM_SOURCE_LABELS: Record<CustomFeatureSource, string> = {
+  class: 'Classe', subclass: 'Sottoclasse', race: 'Razza',
+  background: 'Background', feat: 'Talento', homebrew: 'Homebrew', manual: 'Manuale'
+};
+
+export interface CustomFeature {
+  id: string;
+  name: string;
+  description: string;
+  source: CustomFeatureSource;
+  actionType?: ActionType;
+  maxUses?: number;              // 0/assente = nessun limite di utilizzi
+  recovery?: ResourceRecovery;
+}
+
 export interface Character {
   id?: number;                       // auto-increment Dexie
   name: string;
@@ -54,11 +94,13 @@ export interface Character {
   expertiseSelections: Record<string, string[]>;
   // featureId -> sotto-opzioni scelte (manovre, discipline, invocazioni...)
   featureSelections: Record<string, string[]>;
+  customFeatures: CustomFeature[];           // abilità aggiunte manualmente
+  resources: CharacterResource[];            // risorse con utilizzi limitati
   knownSpellIds: string[];
   preparedSpellIds: string[];
   spellSlotsUsed: Record<number, number>;    // livello slot -> slot spesi
   combat: CombatStats;
-  equipment: string;
+  equipment: string[];                       // un oggetto per voce
   attacks: Attack[];
   traits: CharacterTraits;
   createdAt: number;
@@ -81,6 +123,8 @@ export function emptyCharacter(): Character {
     savingThrowProficiencies: [],
     expertiseSelections: {},
     featureSelections: {},
+    customFeatures: [],
+    resources: [],
     knownSpellIds: [],
     preparedSpellIds: [],
     spellSlotsUsed: {},
@@ -90,10 +134,38 @@ export function emptyCharacter(): Character {
       hitDice: '', deathSaveSuccesses: 0, deathSaveFailures: 0,
       inspiration: false
     },
-    equipment: '',
+    equipment: [],
     attacks: [],
     traits: { personality: '', ideals: '', bonds: '', flaws: '' },
     createdAt: Date.now(),
     updatedAt: Date.now()
+  };
+}
+
+/**
+ * Rende retrocompatibili i personaggi salvati con versioni precedenti del
+ * modello: aggiunge i campi mancanti e converte l'equipaggiamento da
+ * stringa unica a elenco di voci.
+ */
+export function normalizeCharacter(char: Character): Character {
+  const legacyEquipment = char.equipment as unknown;
+  const equipment = Array.isArray(legacyEquipment)
+    ? legacyEquipment
+    : typeof legacyEquipment === 'string' && legacyEquipment.trim()
+      ? legacyEquipment.split(/[\n,]/).map(s => s.trim()).filter(Boolean)
+      : [];
+  return {
+    ...char,
+    equipment,
+    customAbilityBonuses: char.customAbilityBonuses ?? {},
+    favoriteFeatureIds: char.favoriteFeatureIds ?? [],
+    expertiseSelections: char.expertiseSelections ?? {},
+    featureSelections: char.featureSelections ?? {},
+    customFeatures: char.customFeatures ?? [],
+    resources: char.resources ?? [],
+    knownSpellIds: char.knownSpellIds ?? [],
+    preparedSpellIds: char.preparedSpellIds ?? [],
+    spellSlotsUsed: char.spellSlotsUsed ?? {},
+    attacks: char.attacks ?? []
   };
 }

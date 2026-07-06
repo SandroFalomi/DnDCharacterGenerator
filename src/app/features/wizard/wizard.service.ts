@@ -105,7 +105,7 @@ export class WizardService {
     const race = this.content.raceMap().get(char.raceId);
     char.combat.speed = race?.speed ?? 9;
     const bg = this.content.backgroundMap().get(char.backgroundId);
-    char.equipment = [...(primary?.equipment ?? []), ...(bg?.equipment ?? [])].join(', ');
+    char.equipment = [...(primary?.equipment ?? []), ...(bg?.equipment ?? [])];
     return char;
   }
 }

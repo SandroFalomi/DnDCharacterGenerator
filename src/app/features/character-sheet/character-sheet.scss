@@ -78,8 +78,64 @@
 .death-saves { grid-column: span 2; }
 
 .equipment-box {
-  display: flex; flex-direction: column;
-  textarea { flex: 1; min-height: 140px; line-height: 1.6; }
+  .equipment-row {
+    display: flex; align-items: center; gap: 8px; margin-bottom: 6px;
+    input { flex: 1; padding: 7px 10px; }
+    .equip-bullet { color: var(--gold-dim); font-size: 0.75rem; flex-shrink: 0; }
+  }
+}
+
+/* Risorse & utilizzi */
+.resource-box {
+  .resource-row {
+    display: grid; grid-template-columns: 2fr auto 64px 1.4fr auto; gap: 8px; align-items: center;
+    margin-bottom: 8px;
+    @media (max-width: 720px) { grid-template-columns: 1fr 1fr; }
+  }
+  .res-name { padding: 7px 10px; }
+  .res-max { text-align: center; padding: 7px 4px; }
+  .res-uses {
+    display: flex; align-items: center; gap: 6px;
+    .slot-btn {
+      width: 22px; height: 22px; border-radius: 50%; cursor: pointer;
+      background: transparent; border: 1px solid rgba(201, 168, 76, 0.4); color: var(--gold);
+      display: flex; align-items: center; justify-content: center;
+      &:hover { background: rgba(201, 168, 76, 0.15); }
+    }
+    .res-count {
+      font-family: var(--font-title); color: var(--gold-bright); min-width: 42px; text-align: center;
+      &.exhausted { color: var(--blood-bright); }
+    }
+  }
+}
+
+/* Modifica razza/background */
+.editable-value { display: inline-flex; align-items: center; gap: 6px; }
+.edit-pencil {
+  background: none; border: none; cursor: pointer; color: var(--gold-dim);
+  font-size: 0.85rem; padding: 0 4px; transition: color 0.2s, transform 0.2s;
+  &:hover { color: var(--gold-bright); transform: scale(1.15); }
+}
+.warning-box {
+  border: 1px solid rgba(232, 179, 74, 0.5); border-radius: 8px; padding: 12px 16px;
+  background: rgba(232, 179, 74, 0.08); color: #e8cf9a; font-size: 0.88rem;
+  strong { color: #e8b34a; }
+  ul { margin: 8px 0 0 18px; }
+  li { margin-bottom: 4px; }
+  em { color: var(--parchment); }
+}
+
+/* Abilità personalizzate */
+.custom-badge { border-color: rgba(232, 179, 74, 0.5); color: #e8cf9a; background: rgba(232, 179, 74, 0.08); }
+.delete-feature { &:hover { color: var(--blood-bright); } }
+.catalog-pick {
+  border: 1px dashed rgba(109, 90, 158, 0.5); border-radius: 8px; padding: 12px 14px;
+  background: rgba(109, 90, 158, 0.06);
+  .config-title { font-family: var(--font-title); font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.06em; color: #b3a1e0; }
+  .catalog-row {
+    display: grid; grid-template-columns: 1fr 1.4fr 1.4fr auto; gap: 8px; align-items: center;
+    @media (max-width: 720px) { grid-template-columns: 1fr 1fr; }
+  }
 }
 
 .attack-row {
