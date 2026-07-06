@@ -118,11 +118,101 @@ export const RACES: Race[] = [
     description: 'Nati dal sangue dei draghi, i dragonidi portano nel petto il potere elementale dei loro progenitori e un fiero codice d\'onore.',
     abilityBonuses: { STR: 2, CHA: 1 },
     traits: [
-      { name: 'Discendenza Draconica', description: 'Scegli un tipo di drago: determina il tipo di danno del tuo soffio e la tua resistenza.' },
-      { name: 'Soffio', actionType: 'action', description: 'Con un\'azione puoi esalare energia distruttiva (2d6, TS per dimezzare; aumenta con il livello).' },
-      { name: 'Resistenza ai Danni', description: 'Hai resistenza al tipo di danno associato alla tua discendenza draconica.' }
+      { name: 'Discendenza Draconica', description: 'Il tuo antenato draconico determina il tipo di danno, la forma dell\'arma a soffio e la tua resistenza. Il soffio infligge 2d6 danni (TS per dimezzare, CD 8 + mod. Costituzione + bonus competenza); il danno sale a 3d6 al 6° livello, 4d6 all\'11° e 5d6 al 16°. Un utilizzo per riposo breve o lungo.' }
     ],
-    size: 'Media', speed: 9, languages: ['Comune', 'Draconico']
+    size: 'Media', speed: 9, languages: ['Comune', 'Draconico'],
+    subraces: [
+      {
+        id: 'argento', name: 'Argento',
+        description: 'Draghi metallici dall\'animo nobile, portatori di saggezza e giustizia.',
+        abilityBonuses: {},
+        traits: [
+          { name: 'Soffio di Freddo', actionType: 'action', description: 'Con un\'azione esali un cono di freddo di 4,5 metri. Ogni creatura nell\'area deve effettuare un TS su Costituzione, subendo 2d6 danni da freddo se fallisce (dimezzati se supera).' },
+          { name: 'Resistenza al Freddo', description: 'Possiedi resistenza ai danni da freddo.' }
+        ]
+      },
+      {
+        id: 'bianco', name: 'Bianco',
+        description: 'Draghi ferali dei ghiacci eterni, istintivi e spietati come le tormente.',
+        abilityBonuses: {},
+        traits: [
+          { name: 'Soffio di Freddo', actionType: 'action', description: 'Con un\'azione esali un cono di freddo di 4,5 metri. Ogni creatura nell\'area deve effettuare un TS su Costituzione, subendo 2d6 danni da freddo se fallisce (dimezzati se supera).' },
+          { name: 'Resistenza al Freddo', description: 'Possiedi resistenza ai danni da freddo.' }
+        ]
+      },
+      {
+        id: 'blu', name: 'Blu',
+        description: 'Draghi dei deserti, vanitosi e metodici, signori del fulmine e della sabbia.',
+        abilityBonuses: {},
+        traits: [
+          { name: 'Soffio di Fulmine', actionType: 'action', description: 'Con un\'azione esali una linea di fulmine di 1,5 per 9 metri. Ogni creatura nell\'area deve effettuare un TS su Destrezza, subendo 2d6 danni da fulmine se fallisce (dimezzati se supera).' },
+          { name: 'Resistenza al Fulmine', description: 'Possiedi resistenza ai danni da fulmine.' }
+        ]
+      },
+      {
+        id: 'bronzo', name: 'Bronzo',
+        description: 'Draghi delle coste, guerrieri onorevoli affascinati dai conflitti mortali.',
+        abilityBonuses: {},
+        traits: [
+          { name: 'Soffio di Fulmine', actionType: 'action', description: 'Con un\'azione esali una linea di fulmine di 1,5 per 9 metri. Ogni creatura nell\'area deve effettuare un TS su Destrezza, subendo 2d6 danni da fulmine se fallisce (dimezzati se supera).' },
+          { name: 'Resistenza al Fulmine', description: 'Possiedi resistenza ai danni da fulmine.' }
+        ]
+      },
+      {
+        id: 'nero', name: 'Nero',
+        description: 'Draghi delle paludi, crudeli e corrosivi come l\'acido che sputano.',
+        abilityBonuses: {},
+        traits: [
+          { name: 'Soffio di Acido', actionType: 'action', description: 'Con un\'azione esali una linea di acido di 1,5 per 9 metri. Ogni creatura nell\'area deve effettuare un TS su Destrezza, subendo 2d6 danni da acido se fallisce (dimezzati se supera).' },
+          { name: 'Resistenza all\'Acido', description: 'Possiedi resistenza ai danni da acido.' }
+        ]
+      },
+      {
+        id: 'oro', name: 'Oro',
+        description: 'I più nobili tra i draghi metallici, nemici giurati del male e dell\'ingiustizia.',
+        abilityBonuses: {},
+        traits: [
+          { name: 'Soffio di Fuoco', actionType: 'action', description: 'Con un\'azione esali un cono di fuoco di 4,5 metri. Ogni creatura nell\'area deve effettuare un TS su Destrezza, subendo 2d6 danni da fuoco se fallisce (dimezzati se supera).' },
+          { name: 'Resistenza al Fuoco', description: 'Possiedi resistenza ai danni da fuoco.' }
+        ]
+      },
+      {
+        id: 'ottone', name: 'Ottone',
+        description: 'Draghi loquaci dei deserti assolati, chiacchieroni e amanti del sole.',
+        abilityBonuses: {},
+        traits: [
+          { name: 'Soffio di Fuoco', actionType: 'action', description: 'Con un\'azione esali una linea di fuoco di 1,5 per 9 metri. Ogni creatura nell\'area deve effettuare un TS su Destrezza, subendo 2d6 danni da fuoco se fallisce (dimezzati se supera).' },
+          { name: 'Resistenza al Fuoco', description: 'Possiedi resistenza ai danni da fuoco.' }
+        ]
+      },
+      {
+        id: 'rame', name: 'Rame',
+        description: 'Draghi burloni delle colline rocciose, amanti di enigmi e scherzi.',
+        abilityBonuses: {},
+        traits: [
+          { name: 'Soffio di Acido', actionType: 'action', description: 'Con un\'azione esali una linea di acido di 1,5 per 9 metri. Ogni creatura nell\'area deve effettuare un TS su Destrezza, subendo 2d6 danni da acido se fallisce (dimezzati se supera).' },
+          { name: 'Resistenza all\'Acido', description: 'Possiedi resistenza ai danni da acido.' }
+        ]
+      },
+      {
+        id: 'rosso', name: 'Rosso',
+        description: 'I più avidi e tirannici tra i draghi cromatici, incarnazione del fuoco distruttore.',
+        abilityBonuses: {},
+        traits: [
+          { name: 'Soffio di Fuoco', actionType: 'action', description: 'Con un\'azione esali un cono di fuoco di 4,5 metri. Ogni creatura nell\'area deve effettuare un TS su Destrezza, subendo 2d6 danni da fuoco se fallisce (dimezzati se supera).' },
+          { name: 'Resistenza al Fuoco', description: 'Possiedi resistenza ai danni da fuoco.' }
+        ]
+      },
+      {
+        id: 'verde', name: 'Verde',
+        description: 'Draghi manipolatori delle foreste antiche, maestri di veleni e inganni.',
+        abilityBonuses: {},
+        traits: [
+          { name: 'Soffio di Veleno', actionType: 'action', description: 'Con un\'azione esali un cono di veleno di 4,5 metri. Ogni creatura nell\'area deve effettuare un TS su Costituzione, subendo 2d6 danni da veleno se fallisce (dimezzati se supera).' },
+          { name: 'Resistenza al Veleno', description: 'Possiedi resistenza ai danni da veleno.' }
+        ]
+      }
+    ]
   },
   {
     id: 'gnomo', name: 'Gnomo', icon: '⚙️',
