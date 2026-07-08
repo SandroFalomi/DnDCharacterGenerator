@@ -42,7 +42,14 @@ import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
     }
     nav a:hover { color: var(--parchment); background: rgba(201, 168, 76, 0.07); }
     nav a.active { color: var(--gold-bright); border-color: rgba(201, 168, 76, 0.35); background: rgba(201, 168, 76, 0.08); }
-    @media (max-width: 640px) { .brand-sub { display: none; } }
+    @media (max-width: 640px) {
+      .brand-sub { display: none; }
+      .app-header { padding: 10px 12px; }
+      .brand-rune { font-size: 1.25rem; }
+      .brand-text { font-size: 1.1rem; }
+      nav { gap: 2px; }
+      nav a { padding: 8px 9px; font-size: 0.7rem; letter-spacing: 0.04em; }
+    }
   `]
 })
 export class App {}

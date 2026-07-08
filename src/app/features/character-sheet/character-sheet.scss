@@ -257,3 +257,42 @@ span.badge.action-badge { gap: 4px; }
   .remove-class-btn { margin-bottom: 4px; }
   @media (max-width: 720px) { grid-template-columns: 1fr 1fr; }
 }
+
+/* ---------- Mobile ---------- */
+@media (max-width: 640px) {
+  .top-bar {
+    flex-wrap: wrap; gap: 8px;
+    > .flex { flex-wrap: wrap; gap: 6px; width: 100%; }
+    > .flex .btn { flex: 1 1 auto; }
+  }
+  .sheet-header {
+    .name-input { font-size: 1.25rem; }
+    .header-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  }
+  .sheet-grid { gap: 12px; }
+  .combat-row { gap: 8px; }
+  .combat-box input { width: 58px; font-size: 1.25rem; }
+  .ability-box .ability-score { font-size: 1.3rem; }
+
+  /* Risorse: nome a tutta larghezza, controlli sotto */
+  .resource-box .resource-row {
+    grid-template-columns: auto 56px 1fr auto; gap: 6px;
+    .res-name { grid-column: 1 / -1; }
+  }
+
+  .attack-row { grid-template-columns: 1fr 1fr; }
+  .spell-manage-row { flex-wrap: wrap; label.flex { flex-wrap: wrap; } }
+  .spell-filters { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .slot-row { gap: 6px; }
+  .action-filter-bar .tab { padding: 6px 10px; }
+  .catalog-pick .catalog-row { grid-template-columns: 1fr; }
+}
+
+/* Target touch più comodi */
+@media (pointer: coarse) {
+  .fav-star { font-size: 1.2rem; padding: 6px 10px; }
+  .edit-pencil { font-size: 1.05rem; padding: 4px 10px; }
+  .slot-btn, .resource-box .res-uses .slot-btn { width: 30px; height: 30px; }
+  .feature-title { padding: 10px 4px; }
+  .prof-row { padding: 6px 0; }
+}

@@ -35,6 +35,11 @@ import { ClassBrowserComponent } from './class-browser';
       margin-bottom: 8px;
     }
     .hero-sub { color: var(--parchment-dim); font-style: italic; margin-bottom: 26px; }
+    @media (max-width: 640px) {
+      .hero { padding: 16px 0 4px; }
+      .hero-title { font-size: 1.65rem; }
+      .hero-sub { font-size: 0.85rem; margin-bottom: 16px; }
+    }
   `]
 })
 export class HomeComponent {

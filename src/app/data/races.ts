@@ -4,12 +4,31 @@ export const RACES: Race[] = [
   {
     id: 'umano', name: 'Umano', icon: '👤',
     description: 'Ambiziosi e versatili, gli umani sono i pionieri del mondo conosciuto. La loro breve vita li spinge a lasciare un segno indelebile nella storia.',
-    abilityBonuses: { STR: 1, DEX: 1, CON: 1, INT: 1, WIS: 1, CHA: 1 },
-    traits: [
-      { name: 'Versatilità', description: 'Gli umani ottengono +1 a tutti i punteggi di caratteristica.' }
-    ],
-    size: 'Media', speed: 9, languages: ['Comune', 'Una lingua a scelta']
+    abilityBonuses: {},
+    traits: [],
+    size: 'Media', speed: 9, languages: ['Comune', 'Una lingua a scelta'],
+    subraces: [
+      {
+        id: 'standard', name: 'Standard',
+        description: 'L\'umano nella sua versatilità più pura: cresce in ogni campo.',
+        abilityBonuses: { STR: 1, DEX: 1, CON: 1, INT: 1, WIS: 1, CHA: 1 },
+        traits: [
+          { name: 'Versatilità', description: 'Gli umani ottengono +1 a tutti i punteggi di caratteristica.' }
+        ]
+      },
+      {
+        id: 'alternativo', name: 'Alternativo (Variante)',
+        description: 'Un umano che rinuncia alla crescita uniforme per specializzarsi: un talento e capacità mirate.',
+        abilityBonuses: {},
+        traits: [
+          { name: 'Talento', description: 'Ottieni un talento a tua scelta. Aggiungilo al personaggio dalla sezione "Talenti" della scheda.' },
+          { name: 'Caratteristiche Versatili', description: 'Due punteggi di caratteristica diversi a tua scelta aumentano di 1 (al posto del +1 a tutte le caratteristiche dell\'umano standard). Applica i due +1 direttamente ai punteggi base della scheda.' },
+          { name: 'Competenza Bonus', description: 'Ottieni competenza in un\'abilità a tua scelta.' }
+        ]
+      }
+    ]
   },
+
   {
     id: 'elfo', name: 'Elfo', icon: '🧝',
     description: 'Creature magiche di grazia ultraterrena, gli elfi vivono in luoghi di bellezza eterea e custodiscono i segreti dell\'arcano da millenni.',

@@ -14,7 +14,7 @@ import { FEATS } from '../../data/feats';
 import { SKILLS } from '../../data/skills';
 
 const SEED_KEY = 'content-seed-version';
-const SEED_VERSION = 5;
+const SEED_VERSION = 6;
 
 // Vecchi id razza sostituiti dal sistema razza + sottorazza
 const LEGACY_RACE_IDS = ['elfo-alto', 'nano-colline', 'halfling-piedelesto', 'gnomo-rocce'];

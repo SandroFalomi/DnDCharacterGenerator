@@ -98,6 +98,15 @@ const STEP_LABELS: Record<StepId, string> = {
     .progress-line.done { background: var(--success); }
     .step-container { min-height: 420px; }
     .wizard-nav { display: flex; justify-content: space-between; margin-top: 26px; }
+    @media (max-width: 640px) {
+      .wizard-progress { gap: 0; margin: 2px 0 16px; flex-wrap: nowrap; }
+      .progress-step { min-width: 34px; }
+      .dot { width: 26px; height: 26px; font-size: 0.7rem; }
+      .label { display: none; }
+      .progress-line { flex-basis: 8px; margin-bottom: 0; }
+      .step-container { min-height: 0; }
+      .wizard-nav { margin-top: 18px; gap: 10px; }
+    }
   `]
 })
 export class WizardComponent implements OnInit {

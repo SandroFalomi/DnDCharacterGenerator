@@ -167,11 +167,13 @@ export function normalizeCharacter(char: Character): Character {
       ? legacyEquipment.split(/[\n,]/).map(s => s.trim()).filter(Boolean)
       : [];
   const legacyRace = LEGACY_RACE_MAP[char.raceId];
+  // Gli umani salvati prima dell'introduzione delle varianti ricadono sulla "Standard" (+1 a tutto)
+  const legacySubrace = char.raceId === 'umano' && !char.subraceId ? 'standard' : null;
   return {
     ...char,
     equipment,
     raceId: legacyRace?.raceId ?? char.raceId,
-    subraceId: legacyRace?.subraceId ?? char.subraceId ?? null,
+    subraceId: char.subraceId ?? legacyRace?.subraceId ?? legacySubrace,
     customAbilityBonuses: char.customAbilityBonuses ?? {},
     favoriteFeatureIds: char.favoriteFeatureIds ?? [],
     expertiseSelections: char.expertiseSelections ?? {},
